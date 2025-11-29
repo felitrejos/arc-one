@@ -1,12 +1,11 @@
 # Arc One
 
-A personal finance management app for iOS that helps you track investments, savings, stocks, and cryptocurrency portfolios.
+A personal finance management app for iOS that helps you track investments, stocks and cryptocurrency portfolios.
 
 ## Features
 
 - Manage investment portfolios
 - Track stocks and crypto assets
-- Monitor savings goals
 - Secure authentication with Apple Sign-In
 
 ## Requirements

@@ -19,6 +19,6 @@ A personal finance management app for iOS that helps you track investments, savi
 1. Open `Arc One.xcodeproj` in Xcode
 2. Build and run (⌘ + R)
 
-## Author
+## Authors
 
 Felipe Trejos and Paul Adrian Pupaza

@@ -6,7 +6,7 @@ A personal finance management app for iOS that helps you track investments, stoc
 
 - Manage investment portfolios
 - Track stocks and crypto assets
-- Secure authentication with Apple Sign-In
+- Secure authentication with Firebase (Apple Sign-In and Google Sign-In)
 
 ## Requirements
 

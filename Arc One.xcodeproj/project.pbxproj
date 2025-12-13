@@ -6,6 +6,17 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		0D671BCC2EECD0BC0028F532 /* FirebaseAI in Frameworks */ = {isa = PBXBuildFile; productRef = 0D671BCB2EECD0BC0028F532 /* FirebaseAI */; };
+		0D671BCE2EECD0BC0028F532 /* FirebaseAILogic in Frameworks */ = {isa = PBXBuildFile; productRef = 0D671BCD2EECD0BC0028F532 /* FirebaseAILogic */; };
+		0D671BD02EECD0BC0028F532 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 0D671BCF2EECD0BC0028F532 /* FirebaseAnalytics */; };
+		0D671BD22EECD0BC0028F532 /* FirebaseAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = 0D671BD12EECD0BC0028F532 /* FirebaseAnalyticsCore */; };
+		0D671BD42EECD0BC0028F532 /* FirebaseAnalyticsIdentitySupport in Frameworks */ = {isa = PBXBuildFile; productRef = 0D671BD32EECD0BC0028F532 /* FirebaseAnalyticsIdentitySupport */; };
+		0D671BD92EECD7840028F532 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 0D671BD82EECD7840028F532 /* GoogleSignIn */; };
+		0D671BDB2EECD7840028F532 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 0D671BDA2EECD7840028F532 /* GoogleSignInSwift */; };
+		0D671BDD2EECDA390028F532 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 0D671BDC2EECDA390028F532 /* FirebaseAuth */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		0D1F14E32EB15EE600370675 /* Arc One.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Arc One.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -36,6 +47,14 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0D671BCE2EECD0BC0028F532 /* FirebaseAILogic in Frameworks */,
+				0D671BD42EECD0BC0028F532 /* FirebaseAnalyticsIdentitySupport in Frameworks */,
+				0D671BDB2EECD7840028F532 /* GoogleSignInSwift in Frameworks */,
+				0D671BCC2EECD0BC0028F532 /* FirebaseAI in Frameworks */,
+				0D671BD02EECD0BC0028F532 /* FirebaseAnalytics in Frameworks */,
+				0D671BD22EECD0BC0028F532 /* FirebaseAnalyticsCore in Frameworks */,
+				0D671BD92EECD7840028F532 /* GoogleSignIn in Frameworks */,
+				0D671BDD2EECDA390028F532 /* FirebaseAuth in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +97,14 @@
 			);
 			name = "Arc One";
 			packageProductDependencies = (
+				0D671BCB2EECD0BC0028F532 /* FirebaseAI */,
+				0D671BCD2EECD0BC0028F532 /* FirebaseAILogic */,
+				0D671BCF2EECD0BC0028F532 /* FirebaseAnalytics */,
+				0D671BD12EECD0BC0028F532 /* FirebaseAnalyticsCore */,
+				0D671BD32EECD0BC0028F532 /* FirebaseAnalyticsIdentitySupport */,
+				0D671BD82EECD7840028F532 /* GoogleSignIn */,
+				0D671BDA2EECD7840028F532 /* GoogleSignInSwift */,
+				0D671BDC2EECDA390028F532 /* FirebaseAuth */,
 			);
 			productName = "Arc One";
 			productReference = 0D1F14E32EB15EE600370675 /* Arc One.app */;
@@ -107,6 +134,10 @@
 			);
 			mainGroup = 0D1F14DA2EB15EE600370675;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				0D671BCA2EECD0BC0028F532 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				0D671BD72EECD7840028F532 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 0D1F14E42EB15EE600370675 /* Products */;
 			projectDirPath = "";
@@ -359,6 +390,68 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		0D671BCA2EECD0BC0028F532 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.7.0;
+			};
+		};
+		0D671BD72EECD7840028F532 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		0D671BCB2EECD0BC0028F532 /* FirebaseAI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0D671BCA2EECD0BC0028F532 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAI;
+		};
+		0D671BCD2EECD0BC0028F532 /* FirebaseAILogic */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0D671BCA2EECD0BC0028F532 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAILogic;
+		};
+		0D671BCF2EECD0BC0028F532 /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0D671BCA2EECD0BC0028F532 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		0D671BD12EECD0BC0028F532 /* FirebaseAnalyticsCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0D671BCA2EECD0BC0028F532 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalyticsCore;
+		};
+		0D671BD32EECD0BC0028F532 /* FirebaseAnalyticsIdentitySupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0D671BCA2EECD0BC0028F532 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalyticsIdentitySupport;
+		};
+		0D671BD82EECD7840028F532 /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0D671BD72EECD7840028F532 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		0D671BDA2EECD7840028F532 /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0D671BD72EECD7840028F532 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
+		};
+		0D671BDC2EECDA390028F532 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0D671BCA2EECD0BC0028F532 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 0D1F14DB2EB15EE600370675 /* Project object */;
 }

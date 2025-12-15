@@ -9,35 +9,38 @@ import UIKit
 import FirebaseAuth
 import FirebaseCore
 import GoogleSignIn
+import LocalAuthentication
 
 class LoginController: UIViewController, UITextFieldDelegate {
 
     @IBOutlet weak var passwordPrompt: UITextField!
     @IBOutlet weak var emailPrompt: UITextField!
     @IBOutlet weak var googleLogin: UIButton!
-    
+
+    private let biometricsEnabledKey = "biometricsEnabled"
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
         setupTextFields()
         setupTapToDismissKeyboard()
     }
-    
+
     private func setupTextFields() {
         emailPrompt.delegate = self
         passwordPrompt.delegate = self
-        
+
         [emailPrompt, passwordPrompt].forEach { textField in
             textField?.applyAuthStyle()
         }
     }
-    
+
     private func setupTapToDismissKeyboard() {
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
     }
-    
+
     @objc private func dismissKeyboard() {
         view.endEditing(true)
     }
@@ -55,19 +58,19 @@ class LoginController: UIViewController, UITextFieldDelegate {
             }
         }
     }
-    
+
     func textFieldDidBeginEditing(_ textField: UITextField) {
         textField.setFocusedBorder()
     }
-    
+
     func textFieldDidEndEditing(_ textField: UITextField) {
         textField.setUnfocusedBorder()
     }
-    
+
     @IBAction func signupTapped(_ sender: UIButton) {
         performSegue(withIdentifier: "loginToSignup", sender: self)
     }
-    
+
     @IBAction func loginTapped(_ sender: UIButton) {
         dismissKeyboard()
 
@@ -109,7 +112,9 @@ class LoginController: UIViewController, UITextFieldDelegate {
                 return
             }
 
-            self.performSegue(withIdentifier: "loginToHome", sender: self)
+            self.offerToEnableFaceIDIfNeeded {
+                self.performSegue(withIdentifier: "loginToHome", sender: self)
+            }
         }
     }
 
@@ -122,14 +127,13 @@ class LoginController: UIViewController, UITextFieldDelegate {
 
         guard let clientID = FirebaseApp.app()?.options.clientID else {
             setGoogleLoading(false)
-            showAuthAlert(title: "Config error", message: "Missing Firebase clientID. Verify FirebaseApp.configure() and GoogleService-Info.plist.")
+            showAuthAlert(title: "Config error", message: "Missing Firebase clientID.")
             return
         }
 
         let config = GIDConfiguration(clientID: clientID)
         GIDSignIn.sharedInstance.configuration = config
 
-        // iOS 15+ API
         GIDSignIn.sharedInstance.signIn(withPresenting: self) { [weak self] result, error in
             guard let self = self else { return }
 
@@ -174,7 +178,9 @@ class LoginController: UIViewController, UITextFieldDelegate {
                     return
                 }
 
-                self.performSegue(withIdentifier: "loginToHome", sender: self)
+                self.offerToEnableFaceIDIfNeeded {
+                    self.performSegue(withIdentifier: "loginToHome", sender: self)
+                }
             }
         }
     }
@@ -187,6 +193,39 @@ class LoginController: UIViewController, UITextFieldDelegate {
         DispatchQueue.main.async {
             let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
             alert.addAction(UIAlertAction(title: "OK", style: .default))
+            self.present(alert, animated: true)
+        }
+    }
+
+    private func offerToEnableFaceIDIfNeeded(completion: @escaping () -> Void) {
+        if UserDefaults.standard.bool(forKey: biometricsEnabledKey) {
+            DispatchQueue.main.async { completion() }
+            return
+        }
+
+        let context = LAContext()
+        var error: NSError?
+        guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
+            DispatchQueue.main.async { completion() }
+            return
+        }
+
+        DispatchQueue.main.async {
+            let alert = UIAlertController(
+                title: "Enable Face ID?",
+                message: "Use Face ID to unlock the app next time.",
+                preferredStyle: .alert
+            )
+
+            alert.addAction(UIAlertAction(title: "Not now", style: .cancel) { _ in
+                completion()
+            })
+
+            alert.addAction(UIAlertAction(title: "Enable", style: .default) { _ in
+                UserDefaults.standard.set(true, forKey: self.biometricsEnabledKey)
+                completion()
+            })
+
             self.present(alert, animated: true)
         }
     }

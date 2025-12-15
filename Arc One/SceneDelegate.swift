@@ -8,10 +8,13 @@
 import UIKit
 import FirebaseAuth
 import GoogleSignIn
+import LocalAuthentication
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
+
+    private let biometricsEnabledKey = "biometricsEnabled"
 
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
         guard let url = URLContexts.first?.url else { return }
@@ -25,15 +28,45 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let window = UIWindow(windowScene: windowScene)
 
         if Auth.auth().currentUser != nil {
-            let mainVC = storyboard.instantiateViewController(withIdentifier: "TabController")
-            window.rootViewController = mainVC
+            if shouldLockWithBiometrics() {
+                authenticate { success in
+                    if success {
+                        window.rootViewController = storyboard.instantiateViewController(withIdentifier: "TabController")
+                        window.makeKeyAndVisible()
+                    }
+                }
+            } else {
+                window.rootViewController = storyboard.instantiateViewController(withIdentifier: "TabController")
+                window.makeKeyAndVisible()
+            }
         } else {
-            let loginVC = storyboard.instantiateViewController(withIdentifier: "LoginController")
-            window.rootViewController = loginVC
+            window.rootViewController = storyboard.instantiateViewController(withIdentifier: "LoginController")
+            window.makeKeyAndVisible()
         }
 
         self.window = window
-        window.makeKeyAndVisible()
+    }
+
+    private func shouldLockWithBiometrics() -> Bool {
+        guard UserDefaults.standard.bool(forKey: biometricsEnabledKey) else { return false }
+
+        let ctx = LAContext()
+        var err: NSError?
+        return ctx.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &err)
+    }
+
+    private func authenticate(completion: @escaping (Bool) -> Void) {
+        let context = LAContext()
+        context.localizedCancelTitle = "Cancel"
+
+        context.evaluatePolicy(
+            .deviceOwnerAuthenticationWithBiometrics,
+            localizedReason: "Unlock Arc One"
+        ) { success, _ in
+            DispatchQueue.main.async {
+                completion(success)
+            }
+        }
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {

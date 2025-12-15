@@ -182,6 +182,7 @@
 				INFOPLIST_FILE = "Arc One/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Arc One";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -221,6 +222,7 @@
 				INFOPLIST_FILE = "Arc One/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Arc One";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;

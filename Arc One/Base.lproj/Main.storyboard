@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="24412" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="rWM-Fd-WPe">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="24506" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="rWM-Fd-WPe">
     <device id="retina6_3" orientation="portrait" appearance="light"/>
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="24405"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="24504"/>
         <capability name="Image references" minToolsVersion="12.0"/>
         <capability name="Named colors" minToolsVersion="9.0"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
@@ -120,12 +120,12 @@
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <state key="normal" title="Button"/>
                                 <buttonConfiguration key="configuration" style="plain" imagePlacement="leading" title="Continue with Google" imagePadding="10" cornerStyle="capsule" titleAlignment="automatic">
-                                    <imageReference key="image" image="Google" symbolScale="default" variableValue="5.5511151231257827e-17"/>
+                                    <imageReference key="image" image="logo-google" symbolScale="default" variableValue="5.5511151231257827e-17"/>
                                     <backgroundConfiguration key="background">
                                         <color key="strokeColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                     </backgroundConfiguration>
                                     <fontDescription key="titleFontDescription" type="system" weight="medium" pointSize="16"/>
-                                    <color key="baseForegroundColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                    <color key="baseForegroundColor" systemColor="labelColor"/>
                                 </buttonConfiguration>
                                 <connections>
                                     <action selector="googleLoginTapped:" destination="BYZ-38-t0r" eventType="touchUpInside" id="xUK-Wb-NgF"/>
@@ -140,7 +140,7 @@
                         <outlet property="emailPrompt" destination="Ph3-Qr-lqy" id="vk5-2P-wiI"/>
                         <outlet property="googleLogin" destination="HYg-Yz-jYW" id="za8-0l-BEQ"/>
                         <outlet property="passwordPrompt" destination="s1g-V1-8WT" id="DVP-Vw-izl"/>
-                        <segue destination="0K2-Cd-Emm" kind="show" identifier="loginToSignup" id="Ixm-0y-jxX"/>
+                        <segue destination="0K2-Cd-Emm" kind="presentation" identifier="loginToSignup" id="Ixm-0y-jxX"/>
                         <segue destination="O9D-MZ-01e" kind="presentation" identifier="loginToHome" modalPresentationStyle="fullScreen" id="nJW-zv-g8A"/>
                     </connections>
                 </viewController>
@@ -169,7 +169,7 @@
             <objects>
                 <viewController id="0K2-Cd-Emm" customClass="SignupController" customModule="Arc_One" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="rGJ-bu-WbU">
-                        <rect key="frame" x="0.0" y="0.0" width="402" height="874"/>
+                        <rect key="frame" x="0.0" y="0.0" width="402" height="812"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <textField toolTip="Email" opaque="NO" multipleTouchEnabled="YES" contentMode="scaleToFill" horizontalHuggingPriority="248" fixedFrame="YES" showsMenuAsPrimaryAction="YES" contentHorizontalAlignment="leading" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Email" adjustsFontSizeToFit="NO" minimumFontSize="16" clearButtonMode="whileEditing" translatesAutoresizingMaskIntoConstraints="NO" id="Vow-UF-Sat">
@@ -239,12 +239,12 @@
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <state key="normal" title="Button"/>
                                 <buttonConfiguration key="configuration" style="plain" imagePlacement="leading" title="Continue with Google" imagePadding="10" cornerStyle="capsule" titleAlignment="automatic">
-                                    <imageReference key="image" image="Google" symbolScale="default" variableValue="5.5511151231257827e-17"/>
+                                    <imageReference key="image" image="logo-google" symbolScale="default" variableValue="5.5511151231257827e-17"/>
                                     <backgroundConfiguration key="background">
                                         <color key="strokeColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                     </backgroundConfiguration>
                                     <fontDescription key="titleFontDescription" type="system" weight="medium" pointSize="16"/>
-                                    <color key="baseForegroundColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                    <color key="baseForegroundColor" systemColor="labelColor"/>
                                 </buttonConfiguration>
                             </button>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" usesAttributedText="YES" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="en0-e3-MdM">
@@ -262,7 +262,7 @@
                                 <nil key="highlightedColor"/>
                             </label>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="© 2025 Felipe and Paul. All rights reserved." textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="QZo-HO-sB3">
-                                <rect key="frame" x="36" y="785" width="331" height="21"/>
+                                <rect key="frame" x="36" y="746" width="331" height="21"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="16"/>
                                 <nil key="textColor"/>
@@ -278,7 +278,6 @@
                         <outlet property="emailPrompt" destination="Vow-UF-Sat" id="yhp-UL-faF"/>
                         <outlet property="googleLogin" destination="E73-sN-5OS" id="r6n-QP-9WT"/>
                         <outlet property="passwordPrompt" destination="Mz9-Tg-r8A" id="HYf-dL-uvv"/>
-                        <segue destination="O9D-MZ-01e" kind="presentation" identifier="signupToHome" modalPresentationStyle="fullScreen" id="ibX-r5-W17"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="NnO-cN-IWl" sceneMemberID="firstResponder"/>
@@ -288,7 +287,7 @@
         <!--Tab Bar Controller-->
         <scene sceneID="6Qw-Mv-VK0">
             <objects>
-                <tabBarController id="O9D-MZ-01e" sceneMemberID="viewController">
+                <tabBarController storyboardIdentifier="TabController" id="O9D-MZ-01e" sceneMemberID="viewController">
                     <navigationItem key="navigationItem" id="9ys-IC-eZV"/>
                     <tabBar key="tabBar" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" id="927-ZX-Jwq">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="49"/>
@@ -309,7 +308,7 @@
         <!--Portfolio-->
         <scene sceneID="GGL-9O-JPr">
             <objects>
-                <viewController id="2Oh-K6-buf" customClass="PortfolioController" customModule="Arc_One" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="PortfolioController" id="2Oh-K6-buf" customClass="PortfolioController" customModule="Arc_One" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="DMM-yi-drR">
                         <rect key="frame" x="0.0" y="0.0" width="402" height="874"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -395,11 +394,11 @@
                                 <color key="backgroundColor" systemColor="systemGroupedBackgroundColor"/>
                                 <color key="sectionIndexBackgroundColor" systemColor="systemGroupedBackgroundColor"/>
                                 <prototypes>
-                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="default" accessoryType="disclosureIndicator" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="informationCell" editingAccessoryType="disclosureIndicator" id="6tD-Zi-4vX">
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" selectionStyle="default" hidesAccessoryWhenEditing="NO" indentationLevel="1" indentationWidth="0.0" reuseIdentifier="informationCell" id="6tD-Zi-4vX">
                                         <rect key="frame" x="20" y="55.333332061767578" width="362" height="51"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="6tD-Zi-4vX" id="5G2-gw-wuM">
-                                            <rect key="frame" x="0.0" y="0.0" width="331.66666666666669" height="51"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="362" height="51"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                         </tableViewCellContentView>
                                     </tableViewCell>
@@ -410,6 +409,9 @@
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                     </view>
                     <navigationItem key="navigationItem" id="fhR-Im-jau"/>
+                    <connections>
+                        <outlet property="tableView" destination="9ho-JL-jny" id="I6z-gu-1GN"/>
+                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Brr-2k-Wc8" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
@@ -457,11 +459,14 @@
             </objects>
             <point key="canvasLocation" x="4577.6119402985069" y="181.92219679633865"/>
         </scene>
-        <!--Item-->
+        <!--Profile-->
         <scene sceneID="zIT-1w-PB5">
             <objects>
-                <navigationController id="C8S-Xh-fGV" sceneMemberID="viewController">
-                    <tabBarItem key="tabBarItem" title="Item" id="uh7-X8-A0s"/>
+                <navigationController storyboardIdentifier="ProfileController" id="C8S-Xh-fGV" sceneMemberID="viewController">
+                    <tabBarItem key="tabBarItem" title="Profile" id="uh7-X8-A0s">
+                        <imageReference key="image" image="person.fill" catalog="system" symbolScale="default"/>
+                        <imageReference key="selectedImage" image="person.fill" catalog="system" symbolScale="default"/>
+                    </tabBarItem>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="qEa-Zu-CsQ">
                         <rect key="frame" x="0.0" y="62" width="402" height="54"/>
                         <autoresizingMask key="autoresizingMask"/>
@@ -477,7 +482,7 @@
         <!--Analytics-->
         <scene sceneID="Wjq-E7-epE">
             <objects>
-                <viewController id="U7g-g4-Uyj" customClass="AnalyticsController" customModule="Arc_One" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="AnalyticsController" id="U7g-g4-Uyj" customClass="AnalyticsController" customModule="Arc_One" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="kMs-y9-LbB">
                         <rect key="frame" x="0.0" y="0.0" width="402" height="874"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -505,7 +510,7 @@
         <!--Crypto-->
         <scene sceneID="MPA-0X-3o8">
             <objects>
-                <viewController id="LEk-8P-WnJ" customClass="CryptoController" customModule="Arc_One" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="CryptoController" id="LEk-8P-WnJ" customClass="CryptoController" customModule="Arc_One" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="joC-Cr-3yo">
                         <rect key="frame" x="0.0" y="0.0" width="402" height="874"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -531,19 +536,19 @@
             <point key="canvasLocation" x="2584" y="-247"/>
         </scene>
     </scenes>
-    <inferredMetricsTieBreakers>
-        <segue reference="nJW-zv-g8A"/>
-    </inferredMetricsTieBreakers>
     <resources>
         <image name="ArcOneLogo" width="1024" height="1024"/>
-        <image name="Google" width="24" height="24"/>
         <image name="bitcoinsign.circle.fill" catalog="system" width="128" height="123"/>
         <image name="chart.bar.fill" catalog="system" width="128" height="90"/>
         <image name="chart.line.uptrend.xyaxis" catalog="system" width="128" height="102"/>
+        <image name="logo-google" width="24" height="24"/>
         <image name="person.fill" catalog="system" width="128" height="120"/>
         <namedColor name="AccentColor">
             <color red="1" green="0.79199999570846558" blue="0.15700000524520874" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </namedColor>
+        <systemColor name="labelColor">
+            <color white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+        </systemColor>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>

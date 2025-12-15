@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import FirebaseAuth
 import GoogleSignIn
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
@@ -18,7 +19,21 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        guard let _ = (scene as? UIWindowScene) else { return }
+        guard let windowScene = (scene as? UIWindowScene) else { return }
+
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let window = UIWindow(windowScene: windowScene)
+
+        if Auth.auth().currentUser != nil {
+            let mainVC = storyboard.instantiateViewController(withIdentifier: "TabController")
+            window.rootViewController = mainVC
+        } else {
+            let loginVC = storyboard.instantiateViewController(withIdentifier: "LoginController")
+            window.rootViewController = loginVC
+        }
+
+        self.window = window
+        window.makeKeyAndVisible()
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {
@@ -35,6 +50,4 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     func sceneDidEnterBackground(_ scene: UIScene) {
     }
-
-
 }

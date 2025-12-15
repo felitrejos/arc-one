@@ -26,7 +26,7 @@ enum SettingsSection: Int, CaseIterable {
             case .google:
                 return [.editProfile, .deleteAccount]
             case .password:
-                return [.editProfile, .changeEmail, .changePassword, .deleteAccount]
+                return [.editProfile, .changePassword, .deleteAccount]
             }
         case .legal:
             return [.terms, .privacy]
@@ -36,7 +36,6 @@ enum SettingsSection: Int, CaseIterable {
 
 enum SettingsRow {
     case editProfile
-    case changeEmail
     case changePassword
     case deleteAccount
     case terms
@@ -45,7 +44,6 @@ enum SettingsRow {
     var title: String {
         switch self {
         case .editProfile: return "Edit Profile"
-        case .changeEmail: return "Change Email"
         case .changePassword: return "Change Password"
         case .deleteAccount: return "Delete Account"
         case .terms: return "Terms of Service"

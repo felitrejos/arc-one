@@ -15,12 +15,10 @@ class LoginController: UIViewController, UITextFieldDelegate {
     @IBOutlet weak var passwordPrompt: UITextField!
     @IBOutlet weak var emailPrompt: UITextField!
     @IBOutlet weak var googleLogin: UIButton!
-    private var originalGoogleButtonTitle: String?
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        originalGoogleButtonTitle = googleLogin.title(for: .normal)
         setupTextFields()
         setupTapToDismissKeyboard()
     }
@@ -43,6 +41,20 @@ class LoginController: UIViewController, UITextFieldDelegate {
     @objc private func dismissKeyboard() {
         view.endEditing(true)
     }
+
+    private func setButtonLoading(_ button: UIButton, isLoading: Bool) {
+        DispatchQueue.main.async {
+            button.isEnabled = !isLoading
+
+            if isLoading {
+                button.alpha = 0.75
+                button.transform = CGAffineTransform(scaleX: 0.98, y: 0.98)
+            } else {
+                button.alpha = 1.0
+                button.transform = .identity
+            }
+        }
+    }
     
     func textFieldDidBeginEditing(_ textField: UITextField) {
         textField.setFocusedBorder()
@@ -57,7 +69,48 @@ class LoginController: UIViewController, UITextFieldDelegate {
     }
     
     @IBAction func loginTapped(_ sender: UIButton) {
-        performSegue(withIdentifier: "loginToHome", sender: self)
+        dismissKeyboard()
+
+        let email = (emailPrompt.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let password = passwordPrompt.text ?? ""
+
+        guard !email.isEmpty else {
+            showAuthAlert(title: "Missing email", message: "Please enter your email address.")
+            return
+        }
+
+        guard !password.isEmpty else {
+            showAuthAlert(title: "Missing password", message: "Please enter your password.")
+            return
+        }
+
+        setButtonLoading(sender, isLoading: true)
+
+        Auth.auth().signIn(withEmail: email, password: password) { [weak self] _, error in
+            guard let self = self else { return }
+            self.setButtonLoading(sender, isLoading: false)
+
+            if let error = error {
+                self.showAuthAlert(title: "Login failed", message: error.localizedDescription)
+                return
+            }
+
+            guard let user = Auth.auth().currentUser else {
+                self.showAuthAlert(title: "Login failed", message: "Could not read signed-in user.")
+                return
+            }
+
+            guard user.isEmailVerified else {
+                self.showAuthAlert(
+                    title: "Email not verified",
+                    message: "Please verify your email first. Check your inbox (and spam), then log in again."
+                )
+                try? Auth.auth().signOut()
+                return
+            }
+
+            self.performSegue(withIdentifier: "loginToHome", sender: self)
+        }
     }
 
     @IBAction func googleLoginTapped(_ sender: UIButton) {
@@ -107,41 +160,27 @@ class LoginController: UIViewController, UITextFieldDelegate {
                     return
                 }
 
+                guard let user = Auth.auth().currentUser else {
+                    self.showAuthAlert(title: "Login failed", message: "Could not read signed-in user.")
+                    return
+                }
+
+                guard user.isEmailVerified else {
+                    self.showAuthAlert(
+                        title: "Email not verified",
+                        message: "Please verify your email first, then try again."
+                    )
+                    try? Auth.auth().signOut()
+                    return
+                }
+
                 self.performSegue(withIdentifier: "loginToHome", sender: self)
             }
         }
     }
 
     private func setGoogleLoading(_ isLoading: Bool) {
-        DispatchQueue.main.async {
-            self.googleLogin.isEnabled = !isLoading
-            self.googleLogin.alpha = isLoading ? 0.7 : 1.0
-
-            if isLoading {
-                self.originalGoogleButtonTitle = self.originalGoogleButtonTitle ?? self.googleLogin.title(for: .normal)
-                self.googleLogin.setTitle("Signing in…", for: .normal)
-
-                // Lightweight spinner inside the button
-                let spinnerTag = 9991
-                if self.googleLogin.viewWithTag(spinnerTag) == nil {
-                    let spinner = UIActivityIndicatorView(style: .medium)
-                    spinner.tag = spinnerTag
-                    spinner.translatesAutoresizingMaskIntoConstraints = false
-                    self.googleLogin.addSubview(spinner)
-                    NSLayoutConstraint.activate([
-                        spinner.centerYAnchor.constraint(equalTo: self.googleLogin.centerYAnchor),
-                        spinner.trailingAnchor.constraint(equalTo: self.googleLogin.trailingAnchor, constant: -16)
-                    ])
-                    spinner.startAnimating()
-                }
-            } else {
-                self.googleLogin.setTitle(self.originalGoogleButtonTitle ?? "Continue with Google", for: .normal)
-                if let spinner = self.googleLogin.viewWithTag(9991) as? UIActivityIndicatorView {
-                    spinner.stopAnimating()
-                    spinner.removeFromSuperview()
-                }
-            }
-        }
+        setButtonLoading(googleLogin, isLoading: isLoading)
     }
 
     private func showAuthAlert(title: String, message: String) {

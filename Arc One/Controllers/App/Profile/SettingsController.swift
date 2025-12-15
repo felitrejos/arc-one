@@ -8,12 +8,14 @@
 import UIKit
 import SafariServices
 import FirebaseAuth
+import FirebaseCore
+import GoogleSignIn
 
 final class SettingsController: UIViewController {
 
     @IBOutlet private weak var tableView: UITableView!
 
-    private let provider: AuthProvider = .current()
+    private var provider: AuthProvider { .current() }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -22,10 +24,14 @@ final class SettingsController: UIViewController {
         tableView.dataSource = self
         tableView.delegate = self
 
-
         if tableView.dequeueReusableCell(withIdentifier: "settingsCell") == nil {
             tableView.register(UITableViewCell.self, forCellReuseIdentifier: "settingsCell")
         }
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        tableView.reloadData()
     }
 
     private func rows(in sectionIndex: Int) -> [SettingsRow] {
@@ -39,6 +45,157 @@ final class SettingsController: UIViewController {
         present(safari, animated: true)
     }
 
+    private func showOKAlert(title: String, message: String?) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
+
+    private func showError(_ error: Error, fallbackTitle: String = "Error") {
+        showOKAlert(title: fallbackTitle, message: error.localizedDescription)
+    }
+
+    private func isRequiresRecentLogin(_ error: Error) -> Bool {
+        let ns = error as NSError
+        guard ns.domain == AuthErrorDomain else { return false }
+        return ns.code == AuthErrorCode.requiresRecentLogin.rawValue
+    }
+
+    private func performWithReauthIfNeeded(_ operation: @escaping (@escaping (Error?) -> Void) -> Void) {
+        operation { [weak self] error in
+            guard let self else { return }
+
+            if let error, self.isRequiresRecentLogin(error) {
+                self.reauthenticateCurrentUser { [weak self] reauthError in
+                    guard let self else { return }
+
+                    if let reauthError {
+                        self.showError(reauthError, fallbackTitle: "Re-authentication Failed")
+                        return
+                    }
+
+                    operation { [weak self] retryError in
+                        guard let self else { return }
+                        if let retryError {
+                            self.showError(retryError)
+                        }
+                    }
+                }
+            } else if let error {
+                self.showError(error)
+            }
+        }
+    }
+
+    private func reauthenticateCurrentUser(completion: @escaping (Error?) -> Void) {
+        switch provider {
+        case .password:
+            reauthenticateWithPassword(completion: completion)
+        case .google:
+            reauthenticateWithGoogle(completion: completion)
+        }
+    }
+
+    private func reauthenticateWithPassword(completion: @escaping (Error?) -> Void) {
+        guard let user = Auth.auth().currentUser else {
+            completion(NSError(domain: "App", code: -1, userInfo: [NSLocalizedDescriptionKey: "No user session."]))
+            return
+        }
+        guard let email = user.email, !email.isEmpty else {
+            completion(NSError(domain: "App", code: -1, userInfo: [NSLocalizedDescriptionKey: "User has no email."]))
+            return
+        }
+
+        let alert = UIAlertController(
+            title: "Confirm Password",
+            message: "For security, please enter your current password.",
+            preferredStyle: .alert
+        )
+
+        alert.addTextField { tf in
+            tf.placeholder = "Current password"
+            tf.isSecureTextEntry = true
+            tf.textContentType = .password
+        }
+
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { _ in
+            completion(NSError(domain: "App", code: -2, userInfo: [NSLocalizedDescriptionKey: "Cancelled."]))
+        })
+
+        alert.addAction(UIAlertAction(title: "Continue", style: .default) { _ in
+            let pwd = alert.textFields?.first?.text ?? ""
+            if pwd.isEmpty {
+                completion(NSError(domain: "App", code: -3, userInfo: [NSLocalizedDescriptionKey: "Password cannot be empty."]))
+                return
+            }
+
+            let credential = EmailAuthProvider.credential(withEmail: email, password: pwd)
+            user.reauthenticate(with: credential) { _, error in
+                DispatchQueue.main.async { completion(error) }
+            }
+        })
+
+        present(alert, animated: true)
+    }
+
+    private func reauthenticateWithGoogle(completion: @escaping (Error?) -> Void) {
+        guard let user = Auth.auth().currentUser else {
+            completion(NSError(domain: "App", code: -1, userInfo: [NSLocalizedDescriptionKey: "No user session."]))
+            return
+        }
+
+        guard let clientID = FirebaseApp.app()?.options.clientID else {
+            completion(NSError(domain: "App", code: -1, userInfo: [NSLocalizedDescriptionKey: "Missing Firebase clientID."]))
+            return
+        }
+
+        let config = GIDConfiguration(clientID: clientID)
+        GIDSignIn.sharedInstance.configuration = config
+
+        GIDSignIn.sharedInstance.signIn(withPresenting: self) { signInResult, error in
+            if let error {
+                DispatchQueue.main.async { completion(error) }
+                return
+            }
+
+            guard
+                let signInResult,
+                let idToken = signInResult.user.idToken?.tokenString
+            else {
+                DispatchQueue.main.async {
+                    completion(NSError(domain: "App", code: -1, userInfo: [NSLocalizedDescriptionKey: "Google token missing."]))
+                }
+                return
+            }
+
+            let accessToken = signInResult.user.accessToken.tokenString
+            let credential = GoogleAuthProvider.credential(withIDToken: idToken, accessToken: accessToken)
+
+            user.reauthenticate(with: credential) { _, error in
+                DispatchQueue.main.async { completion(error) }
+            }
+        }
+    }
+
+    private func showLoginScreen() {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let loginVC = storyboard.instantiateViewController(withIdentifier: "LoginController")
+        loginVC.modalPresentationStyle = .fullScreen
+
+        let windowScene = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first
+
+        if let window = windowScene?.windows.first(where: { $0.isKeyWindow }) {
+            UIView.transition(with: window, duration: 0.25, options: .transitionCrossDissolve, animations: {
+                window.rootViewController = loginVC
+                window.makeKeyAndVisible()
+            })
+        } else {
+            present(loginVC, animated: true)
+        }
+    }
+
     private func editProfileInline() {
         guard let user = Auth.auth().currentUser else { return }
 
@@ -50,58 +207,40 @@ final class SettingsController: UIViewController {
         }
 
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        alert.addAction(UIAlertAction(title: "Save", style: .default) { _ in
-            let newName = alert.textFields?.first?.text ?? ""
-            let change = user.createProfileChangeRequest()
-            change.displayName = newName
-            change.commitChanges { [weak self] error in
-                DispatchQueue.main.async {
+
+        alert.addAction(UIAlertAction(title: "Save", style: .default) { [weak self] _ in
+            guard let self else { return }
+
+            let newName = (alert.textFields?.first?.text ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+
+            guard !newName.isEmpty else {
+                self.showOKAlert(title: "Error", message: "Name cannot be empty.")
+                return
+            }
+
+            self.performWithReauthIfNeeded { done in
+                guard let user = Auth.auth().currentUser else {
+                    done(NSError(domain: "App", code: -1, userInfo: [NSLocalizedDescriptionKey: "No user session."]))
+                    return
+                }
+
+                let change = user.createProfileChangeRequest()
+                change.displayName = newName
+
+                change.commitChanges { error in
                     if let error {
-                        let err = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
-                        err.addAction(UIAlertAction(title: "OK", style: .default))
-                        self?.present(err, animated: true)
-                    } else {
-                        self?.tableView.reloadData()
+                        done(error)
+                        return
+                    }
+                    user.reload { reloadError in
+                        done(reloadError)
                     }
                 }
             }
-        })
 
-        present(alert, animated: true)
-    }
-
-    private func changeEmail() {
-        guard let user = Auth.auth().currentUser else { return }
-
-        let alert = UIAlertController(title: "Change Email", message: nil, preferredStyle: .alert)
-        alert.addTextField { tf in
-            tf.placeholder = "New email"
-            tf.keyboardType = .emailAddress
-            tf.autocapitalizationType = .none
-            tf.autocorrectionType = .no
-        }
-
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        alert.addAction(UIAlertAction(title: "Save", style: .default) { [weak self] _ in
-            let newEmail = alert.textFields?.first?.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            guard !newEmail.isEmpty else { return }
-
-            user.sendEmailVerification(beforeUpdatingEmail: newEmail) { error in
-                DispatchQueue.main.async {
-                    if let error {
-                        let err = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
-                        err.addAction(UIAlertAction(title: "OK", style: .default))
-                        self?.present(err, animated: true)
-                    } else {
-                        let ok = UIAlertController(
-                            title: "Verify Email",
-                            message: "We sent a verification email to your new address. Open it to confirm the change.",
-                            preferredStyle: .alert
-                        )
-                        ok.addAction(UIAlertAction(title: "OK", style: .default))
-                        self?.present(ok, animated: true)
-                    }
-                }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                self?.tableView.reloadData()
             }
         })
 
@@ -109,7 +248,7 @@ final class SettingsController: UIViewController {
     }
 
     private func changePassword() {
-        guard let user = Auth.auth().currentUser else { return }
+        guard let _ = Auth.auth().currentUser else { return }
 
         let alert = UIAlertController(title: "Change Password", message: nil, preferredStyle: .alert)
         alert.addTextField { tf in
@@ -125,27 +264,29 @@ final class SettingsController: UIViewController {
 
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         alert.addAction(UIAlertAction(title: "Save", style: .default) { [weak self] _ in
+            guard let self else { return }
+
             let p1 = alert.textFields?.first?.text ?? ""
             let p2 = alert.textFields?.last?.text ?? ""
+
             guard !p1.isEmpty, p1 == p2 else {
-                let err = UIAlertController(title: "Error", message: "Passwords do not match.", preferredStyle: .alert)
-                err.addAction(UIAlertAction(title: "OK", style: .default))
-                self?.present(err, animated: true)
+                self.showOKAlert(title: "Error", message: "Passwords do not match.")
                 return
             }
 
-            user.updatePassword(to: p1) { error in
-                DispatchQueue.main.async {
-                    if let error {
-                        let err = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
-                        err.addAction(UIAlertAction(title: "OK", style: .default))
-                        self?.present(err, animated: true)
-                    } else {
-                        let ok = UIAlertController(title: "Updated", message: "Your password was updated.", preferredStyle: .alert)
-                        ok.addAction(UIAlertAction(title: "OK", style: .default))
-                        self?.present(ok, animated: true)
-                    }
+            self.performWithReauthIfNeeded { done in
+                guard let user = Auth.auth().currentUser else {
+                    done(NSError(domain: "App", code: -1, userInfo: [NSLocalizedDescriptionKey: "No user session."]))
+                    return
                 }
+
+                user.updatePassword(to: p1) { error in
+                    done(error)
+                }
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                self?.showOKAlert(title: "Updated", message: "Your password was updated.")
             }
         })
 
@@ -168,26 +309,26 @@ final class SettingsController: UIViewController {
     }
 
     private func performDeleteAccount() {
-        guard let user = Auth.auth().currentUser else { return }
+        performWithReauthIfNeeded { [weak self] done in
+            guard let self else { return }
+            guard let user = Auth.auth().currentUser else {
+                done(NSError(domain: "App", code: -1, userInfo: [NSLocalizedDescriptionKey: "No user session."]))
+                return
+            }
 
-        user.delete { [weak self] error in
-            DispatchQueue.main.async {
+            user.delete { error in
                 if let error {
-                    let message = error.localizedDescription
-                    let alert = UIAlertController(title: "Couldn't Delete Account", message: message, preferredStyle: .alert)
-                    alert.addAction(UIAlertAction(title: "OK", style: .default))
-                    self?.present(alert, animated: true)
+                    done(error)
                     return
                 }
 
-                let alert = UIAlertController(title: "Account Deleted", message: "Your account has been deleted.", preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
-                    let storyboard = UIStoryboard(name: "Main", bundle: nil)
-                    let loginVC = storyboard.instantiateViewController(withIdentifier: "LoginController")
-                    loginVC.modalPresentationStyle = .fullScreen
-                    self?.present(loginVC, animated: true)
-                })
-                self?.present(alert, animated: true)
+                do { try Auth.auth().signOut() } catch { /* ignore */ }
+
+                DispatchQueue.main.async { [weak self] in
+                    self?.showLoginScreen()
+                }
+
+                done(nil)
             }
         }
     }
@@ -227,9 +368,6 @@ extension SettingsController: UITableViewDataSource, UITableViewDelegate {
         switch row {
         case .editProfile:
             editProfileInline()
-
-        case .changeEmail:
-            changeEmail()
 
         case .changePassword:
             changePassword()

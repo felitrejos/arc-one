@@ -11,13 +11,13 @@ import GoogleSignIn
 
 final class ProfileController: UIViewController {
 
-
     @IBOutlet private weak var tableView: UITableView!
 
     private var profileName: String? = nil
     private var profileEmail: String? = nil
     private var profileAvatar: UIImage? = nil
 
+    private var authListenerHandle: AuthStateDidChangeListenerHandle?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -26,13 +26,42 @@ final class ProfileController: UIViewController {
         tableView.dataSource = self
         tableView.delegate = self
 
-
         tableView.register(
             UINib(nibName: "ProfileSummaryCell", bundle: nil),
             forCellReuseIdentifier: "ProfileSummaryCell"
         )
 
         updateProfileFromFirebaseUser()
+
+        authListenerHandle = Auth.auth().addStateDidChangeListener { [weak self] _, _ in
+            self?.refreshUserFromServerAndUpdateUI()
+        }
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        refreshUserFromServerAndUpdateUI()
+    }
+
+    deinit {
+        if let handle = authListenerHandle {
+            Auth.auth().removeStateDidChangeListener(handle)
+        }
+    }
+
+    private func refreshUserFromServerAndUpdateUI() {
+        guard let user = Auth.auth().currentUser else {
+            updateProfileFromFirebaseUser()
+            return
+        }
+
+        user.reload { [weak self] error in
+            DispatchQueue.main.async {
+                if let _ = error { /* ignore silently */ }
+                self?.updateProfileFromFirebaseUser()
+            }
+        }
     }
 
     private func updateProfileFromFirebaseUser() {

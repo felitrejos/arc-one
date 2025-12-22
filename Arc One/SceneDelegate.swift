@@ -1,10 +1,3 @@
-//
-//  SceneDelegate.swift
-//  Arc One
-//
-//  Created by Felipe Trejos on 28/10/25.
-//
-
 import UIKit
 import FirebaseAuth
 import GoogleSignIn

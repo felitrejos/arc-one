@@ -17,6 +17,8 @@
 			</array>
 		</dict>
 	</array>
+	<key>FINNHUB_API_KEY</key>
+	<string>d54pm89r01qojbigml3gd54pm89r01qojbigml40</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

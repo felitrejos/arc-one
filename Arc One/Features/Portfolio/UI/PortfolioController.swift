@@ -59,11 +59,8 @@ final class PortfolioController: UIViewController {
         Task { await refreshHeaderAndChartForSelectedRange() }
         configureRefreshTimer()
     }
-}
 
-private extension PortfolioController {
-
-    func setupHeader() {
+    private func setupHeader() {
         amountLabel.text = headerVM.amountText
         amountLabel.font = .systemFont(ofSize: amountLabel.font.pointSize, weight: .bold)
 
@@ -72,7 +69,7 @@ private extension PortfolioController {
         changeLabel.font = .systemFont(ofSize: changeLabel.font.pointSize, weight: .bold)
     }
 
-    func setupSegmentedControl() {
+    private func setupSegmentedControl() {
         rangeSegment.removeAllSegments()
         ["1D", "1W", "1M", "1Y"].enumerated().forEach { idx, title in
             rangeSegment.insertSegment(withTitle: title, at: idx, animated: false)
@@ -83,7 +80,7 @@ private extension PortfolioController {
         configureRefreshTimer()
     }
 
-    func updateSegmentedControlFont() {
+    private func updateSegmentedControlFont() {
         let normal: [NSAttributedString.Key: Any] = [
             .font: UIFont.systemFont(ofSize: 13, weight: .regular),
             .foregroundColor: UIColor.secondaryLabel
@@ -95,11 +92,8 @@ private extension PortfolioController {
         rangeSegment.setTitleTextAttributes(normal, for: .normal)
         rangeSegment.setTitleTextAttributes(selected, for: .selected)
     }
-}
 
-private extension PortfolioController {
-
-    func setupMetricMenu() {
+    private func setupMetricMenu() {
         let actions = PerformanceMode.allCases.map { mode in
             UIAction(title: mode.rawValue, state: (mode == performanceMode) ? .on : .off) { [weak self] _ in
                 guard let self else { return }
@@ -138,11 +132,8 @@ private extension PortfolioController {
 
         metricButton.configuration = config
     }
-}
 
-private extension PortfolioController {
-
-    func setupTable() {
+    private func setupTable() {
         tableView.register(
             UINib(nibName: "InvestmentCell", bundle: nil),
             forCellReuseIdentifier: "investmentCustomCell"
@@ -158,11 +149,8 @@ private extension PortfolioController {
 
         tableView.reloadData()
     }
-}
 
-private extension PortfolioController {
-
-    func startHoldingsListener() {
+    private func startHoldingsListener() {
         holdingsListener?.remove()
         guard FirebaseManager.uid != nil else { return }
 
@@ -204,12 +192,9 @@ private extension PortfolioController {
             return (fallback, 0, fallback.reduce(0) { $0 + $1.valueUSD })
         }
     }
-}
-
-private extension PortfolioController {
 
     /// Save today's snapshot using current equity from quotes
-    func saveTodaySnapshotIfNeeded() async {
+    private func saveTodaySnapshotIfNeeded() async {
         guard lastMarketEquityUSD > 0 else { return }
         
         let today = PortfolioHistoryBuilder.utcDayStart(for: Date())
@@ -224,7 +209,7 @@ private extension PortfolioController {
         }
     }
 
-    func refreshHeaderAndChartForSelectedRange() async {
+    private func refreshHeaderAndChartForSelectedRange() async {
         let rangeType: ChartXAxisFormatter.RangeType
         let days: Int
         
@@ -278,11 +263,8 @@ private extension PortfolioController {
             }
         }
     }
-}
 
-private extension PortfolioController {
-
-    func configureRefreshTimer() {
+    private func configureRefreshTimer() {
         refreshTimer?.invalidate()
         refreshTimer = nil
 
@@ -293,52 +275,12 @@ private extension PortfolioController {
             Task { await self.refreshHeaderAndChartForSelectedRange() }
         }
     }
-}
 
-private extension PortfolioController {
-
-    func presentAddInvestment() {
-        let alert = UIAlertController(title: "Add investment", message: nil, preferredStyle: .alert)
-
-        alert.addTextField { tf in
-            tf.placeholder = "Ticker (e.g. NVDA)"
-            tf.autocapitalizationType = .allCharacters
-        }
-        alert.addTextField { tf in
-            tf.placeholder = "Quantity (e.g. 2.5)"
-            tf.keyboardType = .decimalPad
-        }
-        alert.addTextField { tf in
-            tf.placeholder = "Avg buy price (USD) (e.g. 120.30)"
-            tf.keyboardType = .decimalPad
-        }
-
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        alert.addAction(UIAlertAction(title: "Add", style: .default) { [weak self] _ in
-            guard let self else { return }
-
-            let ticker = alert.textFields?[0].text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            let qtyStr = alert.textFields?[1].text ?? ""
-            let avgStr = alert.textFields?[2].text ?? ""
-
-            let qty = Double(qtyStr.replacingOccurrences(of: ",", with: ".")) ?? 0
-            let avg = Double(avgStr.replacingOccurrences(of: ",", with: ".")) ?? 0
-
-            guard !ticker.isEmpty, qty > 0, avg > 0 else { return }
-
-            Task { [weak self] in
-                guard let self else { return }
-                try? await self.portfolioService.addHolding(ticker: ticker, quantity: qty, avgBuyPrice: avg)
-            }
-        })
-
-        present(alert, animated: true)
+    private func presentAddInvestment() {
+        performSegue(withIdentifier: "showAddInvestment", sender: nil)
     }
-}
 
-private extension PortfolioController {
-
-    func setupChartCoordinator() {
+    private func setupChartCoordinator() {
         chartCoordinator.attach(to: chartView)
 
         // Update header when user hovers/taps on chart points

@@ -13,14 +13,13 @@ A personal finance management app for iOS that helps you track investments, stoc
 
 ### Authentication & Security
 - Firebase Authentication with multiple sign-in methods:
-  - Apple Sign-In
-  - Google Sign-In
+  - Email/Password
+  - Google OAuth
 - Face ID biometric authentication for enhanced security
 - Secure user profile management
 
 ### Profile & Settings
 - Customizable user profiles
-- App settings and preferences
 - Account information management
 
 ## Architecture
@@ -55,7 +54,7 @@ Each feature module contains:
 - iOS 13.0+
 - Xcode 12.0+
 - Firebase project with:
-  - Authentication enabled (Apple & Google providers)
+  - Authentication enabled (Google providers)
   - Firestore database
 
 ## Getting Started

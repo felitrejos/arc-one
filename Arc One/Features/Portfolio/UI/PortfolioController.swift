@@ -64,9 +64,6 @@ final class PortfolioController: UIViewController {
     @IBAction private func rangeChanged(_ sender: UISegmentedControl) {
         updateSegmentedControlFont()
         selectedRange = Range(rawValue: sender.selectedSegmentIndex) ?? .day
-        
-        // Reset Y-axis tracking when switching ranges
-        chartCoordinator.resetYAxisTracking()
 
         Task { await refreshHeaderAndChartForSelectedRange() }
         configureRefreshTimer()

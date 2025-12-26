@@ -72,11 +72,9 @@ final class PortfolioChartCoordinator: NSObject, ChartViewDelegate {
     private var baselineEquity: Double = 0
     private var storedPercent: Double?
     
-    private var maxAbsolutePercent: Double = 0
-    
-    private let dayStartMinutes: Double = 15 * 60 + 30  // 3:30pm in minutes from midnight
-    private let dayEndMinutes: Double = 22 * 60         // 10:00pm in minutes from midnight
-    private var dayTotalMinutes: Double { dayEndMinutes - dayStartMinutes } // 390 minutes
+    private let dayStartMinutes: Double = 15 * 60 + 30
+    private let dayEndMinutes: Double = 22 * 60
+    private var dayTotalMinutes: Double { dayEndMinutes - dayStartMinutes }
 
     var onHeaderUpdate: ((Double, Double) -> Void)?
     private weak var chartView: LineChartView?
@@ -85,10 +83,6 @@ final class PortfolioChartCoordinator: NSObject, ChartViewDelegate {
         self.chartView = chartView
         chartView.delegate = self
         setupChartAppearance(chartView)
-    }
-    
-    func resetYAxisTracking() {
-        maxAbsolutePercent = 0
     }
     
     func setDayChart(dataPoints: [ChartDataPoint], openEquity: Double, currentPercent: Double) {
@@ -108,15 +102,13 @@ final class PortfolioChartCoordinator: NSObject, ChartViewDelegate {
         storedPercent = percent
         baselineEquity = percent == -100 ? currentEquity : currentEquity / (1 + percent / 100.0)
         currentDataPoints = []
-        maxAbsolutePercent = 0
         
         configureDayXAxis(chartView: chartView)
         
         // Just configure axes with no data
         let right = chartView.rightAxis
-        let padding = 0.5
-        right.axisMinimum = -padding
-        right.axisMaximum = padding
+        right.axisMinimum = -3.0
+        right.axisMaximum = 3.0
         
         chartView.data = nil
         chartView.notifyDataSetChanged()
@@ -180,7 +172,6 @@ final class PortfolioChartCoordinator: NSObject, ChartViewDelegate {
         }
         
         let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
         
         var entries: [ChartDataEntry] = []
         
@@ -200,10 +191,8 @@ final class PortfolioChartCoordinator: NSObject, ChartViewDelegate {
             return
         }
         
-        let currentMax = entries.map { abs($0.y) }.max() ?? 0
-        maxAbsolutePercent = max(maxAbsolutePercent, currentMax)
-        
-        let yRange = max(maxAbsolutePercent * 1.2, 0.5)
+        let maxPercent = entries.map { abs($0.y) }.max() ?? 0
+        let yRange = max(maxPercent * 1.3, 3.0)
         
         let right = chartView.rightAxis
         right.axisMinimum = -yRange

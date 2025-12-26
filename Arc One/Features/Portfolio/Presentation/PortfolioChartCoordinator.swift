@@ -8,41 +8,26 @@ struct ChartDataPoint {
 
 final class DayChartXAxisFormatter: AxisValueFormatter {
     
-    private let fixedTimes: [Date]
     private let formatter: DateFormatter
     
-    init(today: Date) {
-        let calendar = Calendar.current
-        let dayStart = calendar.startOfDay(for: today)
-        
-        // Fixed labels: 3:30pm, 5pm, 6:30pm, 8pm, 10pm
-        let labelMinutes = [15*60+30, 17*60, 18*60+30, 20*60, 22*60] 
-        self.fixedTimes = labelMinutes.compactMap {
-            calendar.date(byAdding: .minute, value: $0, to: dayStart)
-        }
-        
+    init() {
         self.formatter = DateFormatter()
         self.formatter.dateFormat = "h:mm"
     }
     
     func stringForValue(_ value: Double, axis: AxisBase?) -> String {
-        let minutesFromStart = value
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        
-        guard let time = calendar.date(byAdding: .minute, value: Int(15*60 + 30 + minutesFromStart), to: today) else {
+        guard let time = calendar.date(byAdding: .minute, value: Int(15*60 + 30 + value), to: today) else {
             return ""
         }
-        
         return formatter.string(from: time)
     }
 }
 
 final class ChartXAxisFormatter: AxisValueFormatter {
     
-    enum RangeType {
-        case day, week, month, year
-    }
+    enum RangeType { case week, month, year }
     
     private let dates: [Date]
     private let formatter: DateFormatter
@@ -52,7 +37,6 @@ final class ChartXAxisFormatter: AxisValueFormatter {
         self.formatter = DateFormatter()
         
         switch rangeType {
-        case .day:   formatter.dateFormat = "ha"
         case .week:  formatter.dateFormat = "EEE"
         case .month: formatter.dateFormat = "MMM d"
         case .year:  formatter.dateFormat = "MMM"
@@ -86,93 +70,13 @@ final class PortfolioChartCoordinator: NSObject, ChartViewDelegate {
     }
     
     func setDayChart(dataPoints: [ChartDataPoint], openEquity: Double, currentPercent: Double) {
-        guard let chartView else { return }
+        guard let chartView, openEquity != 0, !dataPoints.isEmpty else { return }
         
         currentDataPoints = dataPoints
         baselineEquity = openEquity
         storedPercent = currentPercent
         
-        configureDayXAxis(chartView: chartView)
-        renderDayChart(on: chartView, dataPoints: dataPoints, openEquity: openEquity)
-    }
-    
-    func setDayPlaceholder(currentEquity: Double, percent: Double) {
-        guard let chartView else { return }
-        
-        storedPercent = percent
-        baselineEquity = percent == -100 ? currentEquity : currentEquity / (1 + percent / 100.0)
-        currentDataPoints = []
-        
-        configureDayXAxis(chartView: chartView)
-        
-        // Just configure axes with no data
-        let right = chartView.rightAxis
-        right.axisMinimum = -3.0
-        right.axisMaximum = 3.0
-        
-        chartView.data = nil
-        chartView.notifyDataSetChanged()
-    }
-
-    func setChartData(_ dataPoints: [ChartDataPoint], rangeType: ChartXAxisFormatter.RangeType) {
-        guard let chartView, !dataPoints.isEmpty else { return }
-        
-        currentDataPoints = dataPoints
-        baselineEquity = dataPoints.first?.equityUSD ?? 0
-        storedPercent = nil
-
-        configureStandardXAxis(chartView: chartView, dates: dataPoints.map { $0.date }, rangeType: rangeType)
-        renderStandardChart(on: chartView, equities: dataPoints.map { $0.equityUSD })
-    }
-    
-    func setPlaceholderChart(currentEquity: Double, percent: Double, rangeType: ChartXAxisFormatter.RangeType) {
-        guard let chartView else { return }
-        
-        storedPercent = percent
-        let dates = generateFixedDateRange(for: rangeType)
-        let equities = Array(repeating: currentEquity, count: dates.count)
-        
-        currentDataPoints = zip(dates, equities).map { ChartDataPoint(date: $0, equityUSD: $1) }
-        baselineEquity = currentEquity
-
-        configureStandardXAxis(chartView: chartView, dates: dates, rangeType: rangeType)
-        renderStandardChart(on: chartView, equities: equities, overridePositive: percent >= 0)
-    }
-
-    private func configureDayXAxis(chartView: LineChartView) {
-        let xAxis = chartView.xAxis
-        xAxis.valueFormatter = DayChartXAxisFormatter(today: Date())
-        xAxis.avoidFirstLastClippingEnabled = true
-        xAxis.axisMinimum = 0
-        xAxis.axisMaximum = dayTotalMinutes  // 390 minutes (3:30pm to 10pm)
-        xAxis.setLabelCount(5, force: true)
-    }
-    
-    private func configureStandardXAxis(chartView: LineChartView, dates: [Date], rangeType: ChartXAxisFormatter.RangeType) {
-        let xAxis = chartView.xAxis
-        xAxis.valueFormatter = ChartXAxisFormatter(dates: dates, rangeType: rangeType)
-        xAxis.avoidFirstLastClippingEnabled = true
-        xAxis.resetCustomAxisMin()
-        xAxis.resetCustomAxisMax()
-        
-        let labelCount: Int
-        switch rangeType {
-        case .day:   labelCount = 5
-        case .week:  labelCount = 7
-        case .month: labelCount = 5
-        case .year:  labelCount = 6
-        }
-        xAxis.setLabelCount(labelCount, force: false)
-    }
-
-    private func renderDayChart(on chartView: LineChartView, dataPoints: [ChartDataPoint], openEquity: Double) {
-        guard openEquity != 0, !dataPoints.isEmpty else {
-            chartView.data = nil
-            return
-        }
-        
         let calendar = Calendar.current
-        
         var entries: [ChartDataEntry] = []
         
         for point in dataPoints {
@@ -186,59 +90,87 @@ final class PortfolioChartCoordinator: NSObject, ChartViewDelegate {
             entries.append(ChartDataEntry(x: xValue, y: percentFromOpen))
         }
         
-        guard !entries.isEmpty else {
-            chartView.data = nil
-            return
-        }
+        guard !entries.isEmpty else { return }
         
-        let maxPercent = entries.map { abs($0.y) }.max() ?? 0
-        let yRange = max(maxPercent * 1.3, 3.0)
-        
-        let right = chartView.rightAxis
-        right.axisMinimum = -yRange
-        right.axisMaximum = yRange
-        
-        let isPositive = (entries.last?.y ?? 0) >= 0
-        applyChartData(on: chartView, entries: entries, isPositive: isPositive)
+        setupDayAxes(chartView, currentPercent: currentPercent)
+        applyChartData(chartView, entries: entries, isPositive: currentPercent >= 0)
     }
     
-    private func renderStandardChart(on chartView: LineChartView, equities: [Double], overridePositive: Bool? = nil) {
-        guard let first = equities.first, first != 0 else {
-            let entries = equities.indices.map { ChartDataEntry(x: Double($0), y: 0) }
-            applyChartData(on: chartView, entries: entries, isPositive: true)
-            return
-        }
+    func setDayPlaceholder(percent: Double) {
+        guard let chartView else { return }
+        
+        currentDataPoints = []
+        storedPercent = percent
+        
+        setupDayAxes(chartView, currentPercent: percent)
+        chartView.data = nil
+    }
+    
+    func setEmptyChart(message: String) {
+        guard let chartView else { return }
+        
+        currentDataPoints = []
+        storedPercent = 0
+        
+        setupDayAxes(chartView, currentPercent: 0)
+        chartView.noDataText = message
+        chartView.data = nil
+    }
+    
+    private func setupDayAxes(_ chartView: LineChartView, currentPercent: Double) {
+        let xAxis = chartView.xAxis
+        xAxis.valueFormatter = DayChartXAxisFormatter()
+        xAxis.axisMinimum = 0
+        xAxis.axisMaximum = dayTotalMinutes
+        xAxis.setLabelCount(5, force: true)
+        
+        let absPercent = abs(currentPercent)
+        let range = max(absPercent + 2.0, 3.0)
+        
+        let right = chartView.rightAxis
+        right.axisMinimum = -range
+        right.axisMaximum = range
+        right.removeAllLimitLines()
+        
+        let zeroLine = ChartLimitLine(limit: 0)
+        zeroLine.lineWidth = 1.5
+        zeroLine.lineColor = .systemGray3
+        zeroLine.lineDashLengths = [6, 4]
+        right.addLimitLine(zeroLine)
+    }
+    
+    func setChartData(_ dataPoints: [ChartDataPoint], rangeType: ChartXAxisFormatter.RangeType) {
+        guard let chartView, !dataPoints.isEmpty else { return }
+        guard let first = dataPoints.first?.equityUSD, first != 0 else { return }
+        
+        currentDataPoints = dataPoints
+        baselineEquity = first
+        storedPercent = nil
 
-        let percentSeries = equities.map { (($0 - first) / first) * 100.0 }
+        setupStandardXAxis(chartView, dates: dataPoints.map { $0.date }, rangeType: rangeType)
+        
+        let percentSeries = dataPoints.map { (($0.equityUSD - first) / first) * 100.0 }
         let entries = percentSeries.enumerated().map { ChartDataEntry(x: Double($0.offset), y: $0.element) }
-        let isPositive = overridePositive ?? ((percentSeries.last ?? 0) >= 0)
         
         chartView.rightAxis.resetCustomAxisMin()
         chartView.rightAxis.resetCustomAxisMax()
         
-        applyChartData(on: chartView, entries: entries, isPositive: isPositive)
+        applyChartData(chartView, entries: entries, isPositive: (percentSeries.last ?? 0) >= 0)
     }
     
-    private func generateFixedDateRange(for rangeType: ChartXAxisFormatter.RangeType) -> [Date] {
-        let calendar = Calendar.current
-        let now = Date()
-        let today = calendar.startOfDay(for: now)
+    private func setupStandardXAxis(_ chartView: LineChartView, dates: [Date], rangeType: ChartXAxisFormatter.RangeType) {
+        let xAxis = chartView.xAxis
+        xAxis.valueFormatter = ChartXAxisFormatter(dates: dates, rangeType: rangeType)
+        xAxis.resetCustomAxisMin()
+        xAxis.resetCustomAxisMax()
         
         switch rangeType {
-        case .day:
-            return []
-            
-        case .week:
-            return (0..<7).reversed().compactMap { calendar.date(byAdding: .day, value: -$0, to: today) }
-            
-        case .month:
-            return (0..<30).reversed().compactMap { calendar.date(byAdding: .day, value: -$0, to: today) }
-            
-        case .year:
-            return (0..<12).reversed().compactMap { calendar.date(byAdding: .month, value: -$0, to: now) }
+        case .week:  xAxis.setLabelCount(7, force: false)
+        case .month: xAxis.setLabelCount(5, force: false)
+        case .year:  xAxis.setLabelCount(6, force: false)
         }
     }
-
+    
     private func setupChartAppearance(_ chartView: LineChartView) {
         chartView.chartDescription.enabled = false
         chartView.legend.enabled = false
@@ -258,13 +190,6 @@ final class PortfolioChartCoordinator: NSObject, ChartViewDelegate {
         right.labelTextColor = .secondaryLabel
         right.labelFont = .systemFont(ofSize: 11)
         right.valueFormatter = PercentAxisFormatter()
-        
-        let zeroLine = ChartLimitLine(limit: 0)
-        zeroLine.lineWidth = 1.5
-        zeroLine.lineColor = .systemGray3
-        zeroLine.lineDashLengths = [6, 4]
-        right.removeAllLimitLines()
-        right.addLimitLine(zeroLine)
 
         let xAxis = chartView.xAxis
         xAxis.drawGridLinesEnabled = false
@@ -272,17 +197,17 @@ final class PortfolioChartCoordinator: NSObject, ChartViewDelegate {
         xAxis.labelPosition = .bottom
         xAxis.labelTextColor = .secondaryLabel
         xAxis.labelFont = .systemFont(ofSize: 11)
+        xAxis.avoidFirstLastClippingEnabled = true
     }
 
-    private func applyChartData(on chartView: LineChartView, entries: [ChartDataEntry], isPositive: Bool) {
+    private func applyChartData(_ chartView: LineChartView, entries: [ChartDataEntry], isPositive: Bool) {
         let set = LineChartDataSet(entries: entries, label: "")
-        set.mode = .linear  // Straight lines to connect gaps
+        set.mode = .linear
         set.lineWidth = 2.5
         set.drawCirclesEnabled = false
         set.drawValuesEnabled = false
         set.drawFilledEnabled = false
         set.setColor(isPositive ? .systemGreen : .systemRed)
-
         set.highlightEnabled = true
         set.highlightColor = .tertiaryLabel
         set.highlightLineWidth = 1
@@ -293,24 +218,11 @@ final class PortfolioChartCoordinator: NSObject, ChartViewDelegate {
     }
 
     func chartValueSelected(_ chartView: ChartViewBase, entry: ChartDataEntry, highlight: Highlight) {
-        let equity: Double
-        let pct: Double
+        let index = Int(round(entry.x))
+        guard index >= 0, index < currentDataPoints.count else { return }
         
-        if let point = currentDataPoints.first(where: { point in
-            let calendar = Calendar.current
-            let components = calendar.dateComponents([.hour, .minute], from: point.date)
-            let pointMinutes = Double(components.hour ?? 0) * 60 + Double(components.minute ?? 0)
-            return abs((pointMinutes - dayStartMinutes) - entry.x) < 1
-        }) {
-            equity = point.equityUSD
-            pct = baselineEquity == 0 ? 0 : ((equity - baselineEquity) / baselineEquity) * 100.0
-        } else {
-            let index = Int(round(entry.x))
-            guard index >= 0, index < currentDataPoints.count else { return }
-            equity = currentDataPoints[index].equityUSD
-            pct = storedPercent ?? (baselineEquity == 0 ? 0 : ((equity - baselineEquity) / baselineEquity) * 100.0)
-        }
-        
+        let equity = currentDataPoints[index].equityUSD
+        let pct = storedPercent ?? (baselineEquity == 0 ? 0 : ((equity - baselineEquity) / baselineEquity) * 100.0)
         onHeaderUpdate?(equity, pct)
     }
 

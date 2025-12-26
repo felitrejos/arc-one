@@ -69,6 +69,15 @@ class AddInvestmentController: UIViewController {
         tickerLogo.layer.cornerRadius = 8
         tickerLogo.clipsToBounds = true
         tickerLogo.contentMode = .scaleAspectFit
+        
+        // Set default placeholder
+        setTickerPlaceholder()
+    }
+    
+    private func setTickerPlaceholder() {
+        tickerLogo.image = UIImage(named: "nasdaq-logo")
+        tickerName.text = "Select a stock to invest"
+        tickerName.textColor = .secondaryLabel
     }
     
     private func setupMenus() {
@@ -94,8 +103,7 @@ class AddInvestmentController: UIViewController {
         // Reset ticker when market changes
         selectedTicker = nil
         tickerButton.setTitle("Select Ticker", for: .normal)
-        tickerLogo.image = nil
-        tickerName.text = nil
+        setTickerPlaceholder()
         
         updateTickerMenu()
         setupMenus() // Refresh to update checkmark
@@ -117,6 +125,7 @@ class AddInvestmentController: UIViewController {
         selectedTicker = ticker
         tickerButton.setTitle(ticker, for: .normal)
         tickerName.text = "Loading..."
+        tickerName.textColor = .label  // Reset from placeholder color
         tickerLogo.image = nil
         
         Task {
@@ -160,7 +169,7 @@ class AddInvestmentController: UIViewController {
                     quantity: quantity,
                     avgBuyPrice: price
                 )
-                navigationController?.popViewController(animated: true)
+                navigationController?.popToRootViewController(animated: true)
             } catch {
                 addInvestmentButton.isEnabled = true
                 showError("Failed to add investment. Please try again.")

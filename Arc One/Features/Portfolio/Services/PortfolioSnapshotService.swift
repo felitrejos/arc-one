@@ -3,25 +3,32 @@ import FirebaseFirestore
 
 struct PortfolioSnapshot {
     let dayId: String
-    let dayStartUTC: Date
+    let date: Date
     let equityUSD: Double
+    
+    init(date: Date, equityUSD: Double) {
+        self.dayId = Self.dayId(for: date)
+        self.date = date
+        self.equityUSD = equityUSD
+    }
     
     init?(data: [String: Any]) {
         guard
             let dayId = data["dayId"] as? String,
-            let ts = data["dayStartUTC"] as? Timestamp,
+            let ts = data["date"] as? Timestamp,
             let equity = data["equityUSD"] as? Double
         else { return nil }
         
         self.dayId = dayId
-        self.dayStartUTC = ts.dateValue()
+        self.date = ts.dateValue()
         self.equityUSD = equity
     }
     
-    init(dayId: String, dayStartUTC: Date, equityUSD: Double) {
-        self.dayId = dayId
-        self.dayStartUTC = dayStartUTC
-        self.equityUSD = equityUSD
+    static func dayId(for date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.timeZone = TimeZone(secondsFromGMT: 0)
+        return f.string(from: date)
     }
 }
 
@@ -33,46 +40,26 @@ final class PortfolioSnapshotService {
         guard let uid = FirebaseManager.uid else { return nil }
         return db.collection("users").document(uid).collection("portfolio_snapshots")
     }
-    
-    // MARK: - Date Utilities
-    
-    /// Get the start of day in UTC for a given date
-    static func utcDayStart(for date: Date) -> Date {
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(secondsFromGMT: 0)!
-        return cal.startOfDay(for: date)
-    }
-    
-    /// Generate a day ID string (yyyy-MM-dd) for a given UTC date
-    static func dayId(for dayStartUTC: Date) -> String {
-        let f = DateFormatter()
-        f.calendar = Calendar(identifier: .gregorian)
-        f.timeZone = TimeZone(secondsFromGMT: 0)
-        f.dateFormat = "yyyy-MM-dd"
-        return f.string(from: dayStartUTC)
-    }
-    
-    // MARK: - CRUD
 
-    func upsert(snapshot: PortfolioSnapshot) async throws {
+    func save(snapshot: PortfolioSnapshot) async throws {
         guard let col else { return }
         try await col.document(snapshot.dayId).setData([
             "dayId": snapshot.dayId,
-            "dayStartUTC": Timestamp(date: snapshot.dayStartUTC),
-            "equityUSD": snapshot.equityUSD,
-            "updatedAt": FieldValue.serverTimestamp()
-        ], merge: true)
+            "date": Timestamp(date: snapshot.date),
+            "equityUSD": snapshot.equityUSD
+        ])
     }
 
     func fetchSnapshots(lastNDays days: Int) async throws -> [PortfolioSnapshot] {
         guard let col else { return [] }
 
-        let to = Self.utcDayStart(for: Date())
-        let from = to.addingTimeInterval(TimeInterval(-(days - 1) * 86400))
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        guard let from = calendar.date(byAdding: .day, value: -(days - 1), to: today) else { return [] }
 
         let qs = try await col
-            .whereField("dayStartUTC", isGreaterThanOrEqualTo: Timestamp(date: from))
-            .order(by: "dayStartUTC", descending: false)
+            .whereField("date", isGreaterThanOrEqualTo: Timestamp(date: from))
+            .order(by: "date", descending: false)
             .getDocuments()
 
         return qs.documents.compactMap { PortfolioSnapshot(data: $0.data()) }

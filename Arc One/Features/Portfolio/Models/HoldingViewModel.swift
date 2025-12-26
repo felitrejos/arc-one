@@ -1,5 +1,10 @@
 import UIKit
 
+enum PerformanceMode: String, CaseIterable {
+    case sinceBuy = "Since buy"
+    case daily = "Daily"
+}
+
 struct HoldingViewModel {
     let name: String
     let valueUSD: Double

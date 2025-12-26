@@ -29,10 +29,14 @@ final class PortfolioController: UIViewController {
     private var holdingsListener: ListenerRegistration?
     private let marketCoordinator = PortfolioMarketCoordinator(market: MarketDataService())
     private let snapshotService = PortfolioSnapshotService()
+    private let intradayService = IntradayPointService()
 
     private var refreshTimer: Timer?
     private var lastMarketDailyPercent: Double = 0
     private var lastMarketEquityUSD: Double = 0
+    
+    /// Cached intraday points for 1D chart
+    private var intradayPoints: [ChartDataPoint] = []
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -46,7 +50,10 @@ final class PortfolioController: UIViewController {
         setupChartCoordinator()
 
         startHoldingsListener()
-        chartCoordinator.setPlaceholderChart(currentEquity: 0, percent: 0, rangeType: .day)
+        chartCoordinator.setDayPlaceholder(currentEquity: 0, percent: 0)
+        
+        // Cleanup old intraday points on launch
+        Task { try? await intradayService.cleanupOldPoints() }
     }
 
     deinit {
@@ -57,6 +64,9 @@ final class PortfolioController: UIViewController {
     @IBAction private func rangeChanged(_ sender: UISegmentedControl) {
         updateSegmentedControlFont()
         selectedRange = Range(rawValue: sender.selectedSegmentIndex) ?? .day
+        
+        // Reset Y-axis tracking when switching ranges
+        chartCoordinator.resetYAxisTracking()
 
         Task { await refreshHeaderAndChartForSelectedRange() }
         configureRefreshTimer()
@@ -162,7 +172,6 @@ final class PortfolioController: UIViewController {
             guard let self else { return }
 
             Task { @MainActor in
-                // Store DTOs for detail view
                 self.holdingDTOs = dtos
 
                 // 1) Compute prices + table % (daily/sinceBuy)
@@ -177,8 +186,11 @@ final class PortfolioController: UIViewController {
 
                 // 2) Save today's snapshot (builds history over time)
                 await self.saveTodaySnapshotIfNeeded()
+                
+                // 3) Load persisted intraday points for 1D chart
+                await self.loadIntradayPoints()
 
-                // 3) Refresh header/chart according to selected segment
+                // 4) Refresh header/chart according to selected segment
                 await self.refreshHeaderAndChartForSelectedRange()
             }
         }
@@ -203,8 +215,8 @@ final class PortfolioController: UIViewController {
     private func saveTodaySnapshotIfNeeded() async {
         guard lastMarketEquityUSD > 0 else { return }
         
-        let today = PortfolioHistoryBuilder.utcDayStart(for: Date())
-        let dayId = PortfolioHistoryBuilder.dayId(for: today)
+        let today = PortfolioSnapshotService.utcDayStart(for: Date())
+        let dayId = PortfolioSnapshotService.dayId(for: today)
         let snap = PortfolioSnapshot(dayId: dayId, dayStartUTC: today, equityUSD: lastMarketEquityUSD)
         
         do {
@@ -214,13 +226,53 @@ final class PortfolioController: UIViewController {
             print("[Portfolio] Failed to save snapshot: \(error)")
         }
     }
+    
+    /// Load persisted intraday points from Firestore
+    private func loadIntradayPoints() async {
+        do {
+            let points = try await intradayService.fetchTodayPoints()
+            intradayPoints = points.map { ChartDataPoint(date: $0.timestamp, equityUSD: $0.equityUSD) }
+            print("[Portfolio] Loaded \(intradayPoints.count) intraday points")
+        } catch {
+            print("[Portfolio] Failed to load intraday points: \(error)")
+            intradayPoints = []
+        }
+    }
+    
+    /// Save a new intraday point
+    private func saveIntradayPoint(equity: Double) async {
+        let point = IntradayPoint(timestamp: Date(), equityUSD: equity)
+        do {
+            try await intradayService.save(point: point)
+            print("[Portfolio] Saved intraday point: \(Date()) = $\(String(format: "%.2f", equity))")
+        } catch {
+            print("[Portfolio] Failed to save intraday point: \(error)")
+        }
+    }
 
     private func refreshHeaderAndChartForSelectedRange() async {
-        // For 1D, show daily change
+        // For 1D, show daily change with accumulated points
         if selectedRange == .day {
             headerVM = PortfolioHeaderViewModel(amountUSD: lastMarketEquityUSD, changePercent: lastMarketDailyPercent)
             updateHeader()
-            chartCoordinator.setDayChart(currentEquity: lastMarketEquityUSD, percent: lastMarketDailyPercent)
+            
+            // Calculate open equity from daily percent
+            let openEquity = lastMarketDailyPercent == -100 
+                ? lastMarketEquityUSD 
+                : lastMarketEquityUSD / (1 + lastMarketDailyPercent / 100.0)
+            
+            // Add current point if not already in the list
+            if shouldAddNewIntradayPoint() {
+                let newPoint = ChartDataPoint(date: Date(), equityUSD: lastMarketEquityUSD)
+                intradayPoints.append(newPoint)
+                await saveIntradayPoint(equity: lastMarketEquityUSD)
+            }
+            
+            if intradayPoints.isEmpty {
+                chartCoordinator.setDayPlaceholder(currentEquity: lastMarketEquityUSD, percent: lastMarketDailyPercent)
+            } else {
+                chartCoordinator.setDayChart(dataPoints: intradayPoints, openEquity: openEquity, currentPercent: lastMarketDailyPercent)
+            }
             return
         }
         
@@ -260,6 +312,15 @@ final class PortfolioController: UIViewController {
             chartCoordinator.setPlaceholderChart(currentEquity: lastMarketEquityUSD, percent: 0, rangeType: rangeType)
         }
     }
+    
+    /// Check if we should add a new intraday point (avoid duplicates within 30 seconds)
+    private func shouldAddNewIntradayPoint() -> Bool {
+        guard lastMarketEquityUSD > 0 else { return false }
+        guard let lastPoint = intradayPoints.last else { return true }
+        
+        let timeSinceLastPoint = Date().timeIntervalSince(lastPoint.date)
+        return timeSinceLastPoint >= 25  // At least 25 seconds since last point
+    }
 
     private func configureRefreshTimer() {
         refreshTimer?.invalidate()
@@ -286,7 +347,26 @@ final class PortfolioController: UIViewController {
         tableDS.holdings = holdingVMs
         tableView.reloadData()
         
-        await refreshHeaderAndChartForSelectedRange()
+        // For 1D: add new point and refresh chart
+        if selectedRange == .day {
+            headerVM = PortfolioHeaderViewModel(amountUSD: lastMarketEquityUSD, changePercent: lastMarketDailyPercent)
+            updateHeader()
+            
+            let openEquity = lastMarketDailyPercent == -100 
+                ? lastMarketEquityUSD 
+                : lastMarketEquityUSD / (1 + lastMarketDailyPercent / 100.0)
+            
+            // Add new point
+            if shouldAddNewIntradayPoint() {
+                let newPoint = ChartDataPoint(date: Date(), equityUSD: lastMarketEquityUSD)
+                intradayPoints.append(newPoint)
+                await saveIntradayPoint(equity: lastMarketEquityUSD)
+            }
+            
+            chartCoordinator.setDayChart(dataPoints: intradayPoints, openEquity: openEquity, currentPercent: lastMarketDailyPercent)
+        } else {
+            await refreshHeaderAndChartForSelectedRange()
+        }
     }
 
     private func presentAddInvestment() {

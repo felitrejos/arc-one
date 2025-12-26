@@ -33,6 +33,26 @@ final class PortfolioSnapshotService {
         guard let uid = FirebaseManager.uid else { return nil }
         return db.collection("users").document(uid).collection("portfolio_snapshots")
     }
+    
+    // MARK: - Date Utilities
+    
+    /// Get the start of day in UTC for a given date
+    static func utcDayStart(for date: Date) -> Date {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(secondsFromGMT: 0)!
+        return cal.startOfDay(for: date)
+    }
+    
+    /// Generate a day ID string (yyyy-MM-dd) for a given UTC date
+    static func dayId(for dayStartUTC: Date) -> String {
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .gregorian)
+        f.timeZone = TimeZone(secondsFromGMT: 0)
+        f.dateFormat = "yyyy-MM-dd"
+        return f.string(from: dayStartUTC)
+    }
+    
+    // MARK: - CRUD
 
     func upsert(snapshot: PortfolioSnapshot) async throws {
         guard let col else { return }
@@ -47,7 +67,7 @@ final class PortfolioSnapshotService {
     func fetchSnapshots(lastNDays days: Int) async throws -> [PortfolioSnapshot] {
         guard let col else { return [] }
 
-        let to = PortfolioHistoryBuilder.utcDayStart(for: Date())
+        let to = Self.utcDayStart(for: Date())
         let from = to.addingTimeInterval(TimeInterval(-(days - 1) * 86400))
 
         let qs = try await col

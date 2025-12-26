@@ -5,18 +5,25 @@ struct MarketQuote {
     let previousClose: Double
 }
 
+struct TickerProfile {
+    let name: String
+    let logoURL: URL?
+}
+
 private struct FinnhubQuoteDTO: Decodable {
     let c: Double?
     let pc: Double?
 }
 
 private struct FinnhubProfileDTO: Decodable {
+    let name: String?
     let logo: String?
 }
 
 protocol MarketDataServiceProtocol {
     func fetchQuotes(tickers: [String]) async throws -> [String: MarketQuote]
     func fetchLogoURLs(tickers: [String]) async throws -> [String: URL?]
+    func fetchProfile(ticker: String) async throws -> TickerProfile?
 }
 
 enum AppConfig {
@@ -101,5 +108,14 @@ final class MarketDataService: MarketDataServiceProtocol {
             }
             return result
         }
+    }
+
+    func fetchProfile(ticker: String) async throws -> TickerProfile? {
+        let dto = try await client.get(FinnhubProfileDTO.self, path: "stock/profile2", queryItems: [
+            URLQueryItem(name: "symbol", value: ticker.uppercased())
+        ])
+        
+        guard let name = dto.name, !name.isEmpty else { return nil }
+        return TickerProfile(name: name, logoURL: dto.logo.flatMap(URL.init(string:)))
     }
 }

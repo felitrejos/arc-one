@@ -14,7 +14,7 @@ struct HoldingViewModel {
     }
 
     func changeColor(for mode: PerformanceMode) -> UIColor {
-        percentValue(for: mode) >= 0 ? .systemGreen : .systemRed
+        Formatters.changeColor(percentValue(for: mode))
     }
 
     private func percentValue(for mode: PerformanceMode) -> Double {

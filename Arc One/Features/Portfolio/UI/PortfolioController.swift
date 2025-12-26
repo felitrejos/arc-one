@@ -2,6 +2,7 @@ import UIKit
 import DGCharts
 import FirebaseFirestore
 
+@MainActor
 final class PortfolioController: UIViewController {
 
     @IBOutlet private weak var amountLabel: UILabel!
@@ -18,15 +19,15 @@ final class PortfolioController: UIViewController {
 
     private var headerVM = PortfolioHeaderViewModel(amountUSD: 0, changePercent: 0)
     private var holdings: [HoldingViewModel] = []
+    private var holdingDTOs: [HoldingDTO] = []
+    private var marketQuotes: [String: MarketQuote] = [:]
 
     private let chartCoordinator = PortfolioChartCoordinator()
     private let tableDS = PortfolioTableDataSource()
 
     private let portfolioService = PortfolioService()
     private var holdingsListener: ListenerRegistration?
-
-    private let marketService = MarketDataService()
-    private lazy var marketCoordinator = PortfolioMarketCoordinator(market: marketService)
+    private let marketCoordinator = PortfolioMarketCoordinator(market: MarketDataService())
     private let snapshotService = PortfolioSnapshotService()
 
     private var refreshTimer: Timer?
@@ -37,7 +38,8 @@ final class PortfolioController: UIViewController {
         super.viewDidLoad()
         title = "Portfolio"
 
-        setupHeader()
+        styleHeader()
+        updateHeader()
         setupSegmentedControl()
         setupMetricMenu()
         setupTable()
@@ -60,12 +62,14 @@ final class PortfolioController: UIViewController {
         configureRefreshTimer()
     }
 
-    private func setupHeader() {
+    private func updateHeader() {
         amountLabel.text = headerVM.amountText
-        amountLabel.font = .systemFont(ofSize: amountLabel.font.pointSize, weight: .bold)
-
         changeLabel.text = headerVM.changeText
         changeLabel.textColor = headerVM.changeColor
+    }
+    
+    private func styleHeader() {
+        amountLabel.font = .systemFont(ofSize: amountLabel.font.pointSize, weight: .bold)
         changeLabel.font = .systemFont(ofSize: changeLabel.font.pointSize, weight: .bold)
     }
 
@@ -145,7 +149,7 @@ final class PortfolioController: UIViewController {
         tableDS.performanceMode = performanceMode
 
         tableDS.onAddTapped = { [weak self] in self?.presentAddInvestment() }
-        tableDS.onHoldingTapped = { _ in }
+        tableDS.onHoldingTapped = { [weak self] index in self?.showInvestmentDetail(at: index) }
 
         tableView.reloadData()
     }
@@ -157,17 +161,19 @@ final class PortfolioController: UIViewController {
         holdingsListener = portfolioService.listenHoldings { [weak self] dtos in
             guard let self else { return }
 
-            Task {
+            Task { @MainActor in
+                // Store DTOs for detail view
+                self.holdingDTOs = dtos
+
                 // 1) Compute prices + table % (daily/sinceBuy)
-                let (holdingVMs, dailyPercent, equityUSD) = await self.computeHoldings(from: dtos)
+                let (holdingVMs, dailyPercent, equityUSD, quotes) = await self.computeHoldings(from: dtos)
                 self.lastMarketDailyPercent = dailyPercent
                 self.lastMarketEquityUSD = equityUSD
+                self.marketQuotes = quotes
 
-                await MainActor.run {
-                    self.holdings = holdingVMs
-                    self.tableDS.holdings = holdingVMs
-                    self.tableView.reloadData()
-                }
+                self.holdings = holdingVMs
+                self.tableDS.holdings = holdingVMs
+                self.tableView.reloadData()
 
                 // 2) Save today's snapshot (builds history over time)
                 await self.saveTodaySnapshotIfNeeded()
@@ -179,17 +185,17 @@ final class PortfolioController: UIViewController {
     }
     
     /// Compute holdings with market data, returning fallback if API fails
-    private func computeHoldings(from dtos: [HoldingDTO]) async -> (vms: [HoldingViewModel], dailyPercent: Double, equityUSD: Double) {
+    private func computeHoldings(from dtos: [HoldingDTO]) async -> (vms: [HoldingViewModel], dailyPercent: Double, equityUSD: Double, quotes: [String: MarketQuote]) {
         do {
             let result = try await marketCoordinator.compute(dtos: dtos)
-            return (result.holdingVMs, result.totalDailyPercent, result.totalEquityUSD)
+            return (result.holdingVMs, result.totalDailyPercent, result.totalEquityUSD, result.quotes)
         } catch {
             print("[Portfolio] Market data fetch failed: \(error)")
             let fallback = dtos.map {
                 HoldingViewModel(name: $0.ticker.uppercased(), valueUSD: $0.quantity * $0.avgBuyPrice,
                                  sinceBuyChangePercent: 0, dailyChangePercent: 0, icon: nil)
             }
-            return (fallback, 0, fallback.reduce(0) { $0 + $1.valueUSD })
+            return (fallback, 0, fallback.reduce(0) { $0 + $1.valueUSD }, [:])
         }
     }
 
@@ -210,37 +216,32 @@ final class PortfolioController: UIViewController {
     }
 
     private func refreshHeaderAndChartForSelectedRange() async {
-        let rangeType: ChartXAxisFormatter.RangeType
-        let days: Int
-        
-        switch selectedRange {
-        case .day:   rangeType = .day;   days = 1
-        case .week:  rangeType = .week;  days = 7
-        case .month: rangeType = .month; days = 30
-        case .year:  rangeType = .year;  days = 365
-        }
-        
         // For 1D, show daily change
         if selectedRange == .day {
-            await MainActor.run {
-                headerVM = PortfolioHeaderViewModel(amountUSD: lastMarketEquityUSD, changePercent: lastMarketDailyPercent)
-                setupHeader()
-                chartCoordinator.setDayChart(currentEquity: lastMarketEquityUSD, percent: lastMarketDailyPercent)
-            }
+            headerVM = PortfolioHeaderViewModel(amountUSD: lastMarketEquityUSD, changePercent: lastMarketDailyPercent)
+            updateHeader()
+            chartCoordinator.setDayChart(currentEquity: lastMarketEquityUSD, percent: lastMarketDailyPercent)
             return
         }
+        
+        let (rangeType, days): (ChartXAxisFormatter.RangeType, Int) = {
+            switch selectedRange {
+            case .day:   return (.day, 1)
+            case .week:  return (.week, 7)
+            case .month: return (.month, 30)
+            case .year:  return (.year, 365)
+            }
+        }()
         
         // For 1W/1M/1Y, fetch snapshots
         do {
             let snaps = try await snapshotService.fetchSnapshots(lastNDays: days)
             
-            if snaps.count <= 1 {
+            guard snaps.count > 1 else {
                 let equity = snaps.first?.equityUSD ?? lastMarketEquityUSD
-                await MainActor.run {
-                    headerVM = PortfolioHeaderViewModel(amountUSD: equity, changePercent: 0)
-                    setupHeader()
-                    chartCoordinator.setPlaceholderChart(currentEquity: equity, percent: 0, rangeType: rangeType)
-                }
+                headerVM = PortfolioHeaderViewModel(amountUSD: equity, changePercent: 0)
+                updateHeader()
+                chartCoordinator.setPlaceholderChart(currentEquity: equity, percent: 0, rangeType: rangeType)
                 return
             }
             
@@ -249,18 +250,14 @@ final class PortfolioController: UIViewController {
             let lastEquity = dataPoints.last?.equityUSD ?? lastMarketEquityUSD
             let pct = firstEquity == 0 ? 0 : ((lastEquity - firstEquity) / firstEquity) * 100.0
 
-            await MainActor.run {
-                headerVM = PortfolioHeaderViewModel(amountUSD: lastEquity, changePercent: pct)
-                setupHeader()
-                chartCoordinator.setChartData(dataPoints, rangeType: rangeType)
-            }
+            headerVM = PortfolioHeaderViewModel(amountUSD: lastEquity, changePercent: pct)
+            updateHeader()
+            chartCoordinator.setChartData(dataPoints, rangeType: rangeType)
         } catch {
             print("[Portfolio] Failed to fetch snapshots: \(error)")
-            await MainActor.run {
-                headerVM = PortfolioHeaderViewModel(amountUSD: lastMarketEquityUSD, changePercent: 0)
-                setupHeader()
-                chartCoordinator.setPlaceholderChart(currentEquity: lastMarketEquityUSD, percent: 0, rangeType: rangeType)
-            }
+            headerVM = PortfolioHeaderViewModel(amountUSD: lastMarketEquityUSD, changePercent: 0)
+            updateHeader()
+            chartCoordinator.setPlaceholderChart(currentEquity: lastMarketEquityUSD, percent: 0, rangeType: rangeType)
         }
     }
 
@@ -272,12 +269,70 @@ final class PortfolioController: UIViewController {
 
         refreshTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
             guard let self else { return }
-            Task { await self.refreshHeaderAndChartForSelectedRange() }
+            Task { await self.refreshMarketData() }
         }
+    }
+    
+    /// Refetch market data and update UI
+    private func refreshMarketData() async {
+        guard !holdingDTOs.isEmpty else { return }
+        
+        let (holdingVMs, dailyPercent, equityUSD, quotes) = await computeHoldings(from: holdingDTOs)
+        lastMarketDailyPercent = dailyPercent
+        lastMarketEquityUSD = equityUSD
+        marketQuotes = quotes
+        
+        holdings = holdingVMs
+        tableDS.holdings = holdingVMs
+        tableView.reloadData()
+        
+        await refreshHeaderAndChartForSelectedRange()
     }
 
     private func presentAddInvestment() {
         performSegue(withIdentifier: "showAddInvestment", sender: nil)
+    }
+
+    private func showInvestmentDetail(at index: Int) {
+        guard index < holdingDTOs.count else { return }
+        let dto = holdingDTOs[index]
+        let vm = holdings[index]
+        
+        let ticker = dto.ticker.uppercased()
+        let quote = marketQuotes[ticker]
+        let currentPrice = quote?.currentPrice ?? dto.avgBuyPrice
+        let prevClose = quote?.previousClose ?? currentPrice
+        let dailyPct = prevClose == 0 ? 0 : ((currentPrice - prevClose) / prevClose) * 100
+        let sinceBuyPct = vm.sinceBuyChangePercent
+        
+        let totalInvested = dto.avgBuyPrice * dto.quantity
+        let currentValue = currentPrice * dto.quantity
+        
+        let detailVM = InvestmentDetailViewModel(
+            id: dto.id,
+            ticker: ticker,
+            market: dto.market,
+            image: vm.icon,
+            currentPriceText: Formatters.currency.string(from: currentPrice as NSNumber) ?? "$0.00",
+            dailyChangeText: Formatters.percentText(dailyPct),
+            dailyChangePositive: dailyPct >= 0,
+            sinceBuyText: Formatters.percentText(sinceBuyPct),
+            sinceBuyPositive: sinceBuyPct >= 0,
+            buyPositionText: Formatters.currency.string(from: dto.avgBuyPrice as NSNumber) ?? "$0.00",
+            quantityText: String(format: "%.4f", dto.quantity),
+            totalInvestedText: Formatters.currency.string(from: totalInvested as NSNumber) ?? "$0.00",
+            currentValueText: Formatters.currency.string(from: currentValue as NSNumber) ?? "$0.00"
+        )
+        
+        performSegue(withIdentifier: "showInvestmentDetail", sender: detailVM)
+    }
+
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == "showInvestmentDetail",
+           let detailVC = segue.destination as? InvestmentDetailController,
+           let detailVM = sender as? InvestmentDetailViewModel {
+            detailVC.viewModel = detailVM
+        }
     }
 
     private func setupChartCoordinator() {
@@ -287,7 +342,7 @@ final class PortfolioController: UIViewController {
         chartCoordinator.onHeaderUpdate = { [weak self] equity, percent in
             guard let self else { return }
             self.headerVM = PortfolioHeaderViewModel(amountUSD: equity, changePercent: percent)
-            self.setupHeader()
+            self.updateHeader()
         }
     }
 }

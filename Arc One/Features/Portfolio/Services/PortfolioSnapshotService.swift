@@ -5,6 +5,24 @@ struct PortfolioSnapshot {
     let dayId: String
     let dayStartUTC: Date
     let equityUSD: Double
+    
+    init?(data: [String: Any]) {
+        guard
+            let dayId = data["dayId"] as? String,
+            let ts = data["dayStartUTC"] as? Timestamp,
+            let equity = data["equityUSD"] as? Double
+        else { return nil }
+        
+        self.dayId = dayId
+        self.dayStartUTC = ts.dateValue()
+        self.equityUSD = equity
+    }
+    
+    init(dayId: String, dayStartUTC: Date, equityUSD: Double) {
+        self.dayId = dayId
+        self.dayStartUTC = dayStartUTC
+        self.equityUSD = equityUSD
+    }
 }
 
 final class PortfolioSnapshotService {
@@ -17,10 +35,7 @@ final class PortfolioSnapshotService {
     }
 
     func upsert(snapshot: PortfolioSnapshot) async throws {
-        guard let col else {
-            print("[SnapshotService] Cannot upsert: user not authenticated (uid is nil)")
-            return
-        }
+        guard let col else { return }
         try await col.document(snapshot.dayId).setData([
             "dayId": snapshot.dayId,
             "dayStartUTC": Timestamp(date: snapshot.dayStartUTC),
@@ -29,51 +44,17 @@ final class PortfolioSnapshotService {
         ], merge: true)
     }
 
-    func latestSnapshot() async throws -> PortfolioSnapshot? {
-        guard let col else {
-            print("[SnapshotService] Cannot fetch latest: user not authenticated (uid is nil)")
-            return nil
-        }
-        let snap = try await col
-            .order(by: "dayStartUTC", descending: true)
-            .limit(to: 1)
-            .getDocuments()
-
-        guard let doc = snap.documents.first else { return nil }
-        let d = doc.data()
-        guard
-            let dayId = d["dayId"] as? String,
-            let ts = d["dayStartUTC"] as? Timestamp,
-            let equity = d["equityUSD"] as? Double
-        else { return nil }
-
-        return PortfolioSnapshot(dayId: dayId, dayStartUTC: ts.dateValue(), equityUSD: equity)
-    }
-
     func fetchSnapshots(lastNDays days: Int) async throws -> [PortfolioSnapshot] {
-        guard let col else {
-            print("[SnapshotService] Cannot fetch snapshots: user not authenticated (uid is nil)")
-            return []
-        }
+        guard let col else { return [] }
 
-        let now = Date()
-        let to = PortfolioHistoryBuilder.utcDayStart(for: now)
-        let from = to.addingTimeInterval(TimeInterval(-(days - 1) * 24 * 60 * 60))
+        let to = PortfolioHistoryBuilder.utcDayStart(for: Date())
+        let from = to.addingTimeInterval(TimeInterval(-(days - 1) * 86400))
 
         let qs = try await col
             .whereField("dayStartUTC", isGreaterThanOrEqualTo: Timestamp(date: from))
             .order(by: "dayStartUTC", descending: false)
             .getDocuments()
 
-        return qs.documents.compactMap { doc in
-            let d = doc.data()
-            guard
-                let dayId = d["dayId"] as? String,
-                let ts = d["dayStartUTC"] as? Timestamp,
-                let equity = d["equityUSD"] as? Double
-            else { return nil }
-
-            return PortfolioSnapshot(dayId: dayId, dayStartUTC: ts.dateValue(), equityUSD: equity)
-        }
+        return qs.documents.compactMap { PortfolioSnapshot(data: $0.data()) }
     }
 }

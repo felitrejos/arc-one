@@ -3,6 +3,7 @@ import FirebaseFirestore
 struct HoldingDTO {
     let id: String
     let ticker: String
+    let market: String
     let quantity: Double
     let avgBuyPrice: Double
     let buyDate: Timestamp
@@ -19,6 +20,7 @@ struct HoldingDTO {
 
         self.id = doc.documentID
         self.ticker = ticker
+        self.market = d["market"] as? String ?? "Unknown"
         self.quantity = quantity
         self.avgBuyPrice = avgBuyPrice
         self.buyDate = buyDate

@@ -6,7 +6,7 @@ final class PortfolioTableDataSource: NSObject, UITableViewDataSource, UITableVi
     var performanceMode: PerformanceMode = .sinceBuy
 
     var onAddTapped: (() -> Void)?
-    var onHoldingTapped: ((HoldingViewModel) -> Void)?
+    var onHoldingTapped: ((Int) -> Void)?
 
     private let addCellId = "investmentCell"
     private let customCellId = "investmentCustomCell"
@@ -55,6 +55,6 @@ final class PortfolioTableDataSource: NSObject, UITableViewDataSource, UITableVi
             return
         }
 
-        onHoldingTapped?(holdings[indexPath.row])
+        onHoldingTapped?(indexPath.row)
     }
 }

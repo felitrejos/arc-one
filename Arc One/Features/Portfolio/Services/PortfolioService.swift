@@ -6,6 +6,7 @@ final class PortfolioService {
 
     func addHolding(
         ticker: String,
+        market: String,
         quantity: Double,
         avgBuyPrice: Double
     ) async throws {
@@ -13,6 +14,7 @@ final class PortfolioService {
 
         let data: [String: Any] = [
             "ticker": ticker,
+            "market": market,
             "quantity": quantity,
             "avgBuyPrice": avgBuyPrice,
             "buyDate": Timestamp(date: Date()),
@@ -45,5 +47,16 @@ final class PortfolioService {
 
                 onChange(result)
             }
+    }
+
+    func deleteHolding(id: String) async throws {
+        guard let uid = FirebaseManager.uid else { return }
+
+        try await db
+            .collection("users")
+            .document(uid)
+            .collection("holdings")
+            .document(id)
+            .delete()
     }
 }

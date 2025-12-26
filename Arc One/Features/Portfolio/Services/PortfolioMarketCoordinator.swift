@@ -7,6 +7,7 @@ final class PortfolioMarketCoordinator {
         let totalEquityUSD: Double
         let totalDailyPercent: Double
         let totalSinceBuyPercent: Double
+        let quotes: [String: MarketQuote]
     }
 
     private let market: MarketDataServiceProtocol
@@ -68,7 +69,8 @@ final class PortfolioMarketCoordinator {
             holdingVMs: vms,
             totalEquityUSD: totalEquity,
             totalDailyPercent: totalDaily,
-            totalSinceBuyPercent: totalSinceBuy
+            totalSinceBuyPercent: totalSinceBuy,
+            quotes: quotes
         )
     }
 }

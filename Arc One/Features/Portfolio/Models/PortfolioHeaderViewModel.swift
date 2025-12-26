@@ -6,5 +6,5 @@ struct PortfolioHeaderViewModel {
 
     var amountText: String { Formatters.currency.string(from: amountUSD as NSNumber) ?? "$0" }
     var changeText: String { Formatters.percentText(changePercent) }
-    var changeColor: UIColor { changePercent >= 0 ? .systemGreen : .systemRed }
+    var changeColor: UIColor { Formatters.changeColor(changePercent) }
 }

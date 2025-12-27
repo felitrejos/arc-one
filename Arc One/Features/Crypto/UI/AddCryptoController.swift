@@ -1,7 +1,7 @@
 import UIKit
 
 @MainActor
-class AddCryptoController: UIViewController {
+class AddCryptoController: UIViewController, UITextFieldDelegate {
     
     @IBOutlet weak var coinStack: UIStackView!
     @IBOutlet weak var coinButton: UIButton!
@@ -30,24 +30,41 @@ class AddCryptoController: UIViewController {
         setupUI()
         setupCoinMenu()
         applyPrefill()
+        setupTapToDismissKeyboard()
     }
     
     private func setupUI() {
         coinStack.layer.cornerRadius = 12
         
-        priceInput.applyAuthStyle()
-        quantityInput.applyAuthStyle()
-        priceInput.keyboardType = .decimalPad
-        quantityInput.keyboardType = .decimalPad
-
-        coinButton.layer.cornerRadius = 12
-        addCryptoButton.layer.cornerRadius = 14
+        priceInput.applyFintechStyle(themeColor: .systemPurple, isCurrency: true)
+        quantityInput.applyFintechStyle(themeColor: .systemPurple, isCurrency: false)
+        priceInput.delegate = self
+        quantityInput.delegate = self
         
         coinLogo.layer.cornerRadius = 8
         coinLogo.clipsToBounds = true
         coinLogo.contentMode = .scaleAspectFit
         
         setCoinPlaceholder()
+    }
+
+    private func setupTapToDismissKeyboard() {
+        let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tap.cancelsTouchesInView = false
+        view.addGestureRecognizer(tap)
+    }
+
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
+    }
+
+    func textFieldDidBeginEditing(_ textField: UITextField) {
+        textField.setFocusedThemeBorder(color: .systemPurple)
+    }
+
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        textField.setUnfocusedBorder()
+        textField.layer.borderWidth = 1.2
     }
     
     private func setCoinPlaceholder() {

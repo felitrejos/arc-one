@@ -8,7 +8,7 @@
 import UIKit
 
 @MainActor
-class AddInvestmentController: UIViewController {
+class AddInvestmentController: UIViewController, UITextFieldDelegate {
     
     @IBOutlet weak var marketStack: UIStackView!
     @IBOutlet weak var tickerStack: UIStackView!
@@ -44,27 +44,43 @@ class AddInvestmentController: UIViewController {
         setupUI()
         setupMenus()
         applyPrefill()
+        setupTapToDismissKeyboard()
     }
     
     private func setupUI() {
         marketStack.layer.cornerRadius = 12
         tickerStack.layer.cornerRadius = 12
         
-        priceInput.applyAuthStyle()
-        quantityInput.applyAuthStyle()
-        priceInput.keyboardType = .decimalPad
-        quantityInput.keyboardType = .decimalPad
+        priceInput.applyFintechStyle(themeColor: .systemGreen, isCurrency: true)
+        quantityInput.applyFintechStyle(themeColor: .systemGreen, isCurrency: false)
+        priceInput.delegate = self
+        quantityInput.delegate = self
 
-        marketButton.layer.cornerRadius = 12
-        tickerButton.layer.cornerRadius = 12
-        addInvestmentButton.layer.cornerRadius = 14
-        
         tickerLogo.layer.cornerRadius = 8
         tickerLogo.clipsToBounds = true
         tickerLogo.contentMode = .scaleAspectFit
         
         // Set default placeholder
         setTickerPlaceholder()
+    }
+
+    private func setupTapToDismissKeyboard() {
+        let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tap.cancelsTouchesInView = false
+        view.addGestureRecognizer(tap)
+    }
+
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
+    }
+
+    func textFieldDidBeginEditing(_ textField: UITextField) {
+        textField.setFocusedThemeBorder(color: .systemGreen)
+    }
+
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        textField.setUnfocusedBorder()
+        textField.layer.borderWidth = 1.2
     }
     
     private func setTickerPlaceholder() {

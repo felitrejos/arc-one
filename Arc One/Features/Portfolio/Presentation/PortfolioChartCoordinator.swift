@@ -172,6 +172,9 @@ final class PortfolioChartCoordinator: NSObject, ChartViewDelegate {
     }
     
     private func setupChartAppearance(_ chartView: LineChartView) {
+        chartView.backgroundColor = .systemBackground
+        chartView.layer.cornerRadius = 14
+        chartView.layer.masksToBounds = true
         chartView.chartDescription.enabled = false
         chartView.legend.enabled = false
         chartView.dragEnabled = true

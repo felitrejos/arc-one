@@ -11,7 +11,8 @@ final class PortfolioController: UIViewController {
     @IBOutlet private weak var chartView: LineChartView!
     @IBOutlet private weak var tableView: UITableView!
     @IBOutlet private weak var metricButton: UIButton!
-
+    @IBOutlet weak var investmentsStack: UIStackView!
+    
     private enum Range: Int { case day = 0, week = 1, month = 2, year = 3 }
 
     private var selectedRange: Range = .day
@@ -40,6 +41,7 @@ final class PortfolioController: UIViewController {
         super.viewDidLoad()
         title = "Portfolio"
 
+        investmentsStack.layer.cornerRadius = 14
         styleHeader()
         updateHeader()
         setupSegmentedControl()

@@ -30,21 +30,14 @@ class AddInvestmentController: UIViewController {
     
     // Selected values
     private var selectedTicker: String?
-    private var selectedMarket: String = "US"
+    private var selectedMarketIndex: Int = 0
     
     private let portfolioService = PortfolioService()
     private let marketDataService = MarketDataService()
     
-    // Available Markets & Tickers 
-    private let markets = ["US"]
-    
-    private let tickersByMarket: [String: [String]] = [
-        "US": ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "NFLX", "AMD", "INTC", "PYPL", "ADBE", "CSCO", "QCOM", "AVGO", "CRM", "ORCL", "IBM", "DIS", "V", "MA", "JPM", "BAC", "WMT", "KO"]
-    ]
-    
-    private let marketDisplayNames: [String: String] = [
-        "US": "US Stocks"
-    ]
+    private var currentMarket: MarketInfo {
+        MarketDataService.availableMarkets[selectedMarketIndex]
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -82,23 +75,22 @@ class AddInvestmentController: UIViewController {
     
     private func setupMenus() {
         // Market menu 
-        let marketActions = markets.map { market in
-            let displayName = marketDisplayNames[market] ?? market
-            return UIAction(title: displayName, state: market == selectedMarket ? .on : .off) { [weak self] _ in
-                self?.selectMarket(market)
+        let marketActions = MarketDataService.availableMarkets.enumerated().map { index, market in
+            return UIAction(title: market.displayName, state: index == selectedMarketIndex ? .on : .off) { [weak self] _ in
+                self?.selectMarket(index)
             }
         }
         marketButton.menu = UIMenu(children: marketActions)
         marketButton.showsMenuAsPrimaryAction = true
-        marketButton.setTitle(marketDisplayNames[selectedMarket] ?? selectedMarket, for: .normal)
+        marketButton.setTitle(currentMarket.displayName, for: .normal)
         
         // Ticker menu
         updateTickerMenu()
     }
     
-    private func selectMarket(_ market: String) {
-        selectedMarket = market
-        marketButton.setTitle(marketDisplayNames[market] ?? market, for: .normal)
+    private func selectMarket(_ index: Int) {
+        selectedMarketIndex = index
+        marketButton.setTitle(currentMarket.displayName, for: .normal)
         
         // Reset ticker when market changes
         selectedTicker = nil
@@ -110,9 +102,7 @@ class AddInvestmentController: UIViewController {
     }
     
     private func updateTickerMenu() {
-        let tickers = tickersByMarket[selectedMarket] ?? []
-        
-        let tickerActions = tickers.map { ticker in
+        let tickerActions = currentMarket.tickers.map { ticker in
             UIAction(title: ticker) { [weak self] _ in
                 self?.selectTicker(ticker)
             }
@@ -139,9 +129,10 @@ class AddInvestmentController: UIViewController {
     }
     
     private func applyPrefill() {
-        if let market = prefilledMarket, markets.contains(market) {
-            selectedMarket = market
-            marketButton.setTitle(marketDisplayNames[market] ?? market, for: .normal)
+        if let market = prefilledMarket,
+           let index = MarketDataService.availableMarkets.firstIndex(where: { $0.id == market }) {
+            selectedMarketIndex = index
+            marketButton.setTitle(currentMarket.displayName, for: .normal)
             updateTickerMenu()
         }
         
@@ -165,7 +156,7 @@ class AddInvestmentController: UIViewController {
             do {
                 try await portfolioService.addHolding(
                     ticker: ticker,
-                    market: selectedMarket,
+                    market: currentMarket.id,
                     quantity: quantity,
                     avgBuyPrice: price
                 )

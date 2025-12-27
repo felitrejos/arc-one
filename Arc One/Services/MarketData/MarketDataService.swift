@@ -10,6 +10,24 @@ struct TickerProfile {
     let logoURL: URL?
 }
 
+struct MarketInfo {
+    let id: String
+    let displayName: String
+    let tickers: [String]
+}
+
+// MARK: - Available Markets & Tickers
+
+extension MarketDataService {
+    static let availableMarkets: [MarketInfo] = [
+        MarketInfo(id: "US", displayName: "US Stocks", tickers: [
+            "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "NFLX",
+            "AMD", "INTC", "PYPL", "ADBE", "CSCO", "QCOM", "AVGO", "CRM",
+            "ORCL", "IBM", "DIS", "V", "MA", "JPM", "BAC", "WMT", "KO"
+        ])
+    ]
+}
+
 private struct FinnhubQuoteDTO: Decodable {
     let c: Double?
     let pc: Double?
@@ -24,22 +42,6 @@ protocol MarketDataServiceProtocol {
     func fetchQuotes(tickers: [String]) async throws -> [String: MarketQuote]
     func fetchLogoURLs(tickers: [String]) async throws -> [String: URL?]
     func fetchProfile(ticker: String) async throws -> TickerProfile?
-}
-
-enum AppConfig {
-    static func requireString(_ key: String) -> String {
-        guard
-            let value = Bundle.main.object(forInfoDictionaryKey: key) as? String,
-            !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        else {
-            fatalError("Missing or empty Info.plist key: \(key)")
-        }
-        return value
-    }
-
-    static var finnhubAPIKey: String {
-        requireString("FINNHUB_API_KEY")
-    }
 }
 
 private final class FinnhubClient {

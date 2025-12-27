@@ -73,7 +73,7 @@ final class SignupController: UIViewController, UITextFieldDelegate {
 
                     let alert = UIAlertController(
                         title: "Verify your email",
-                        message: "We’ve sent a verification link to \(emailShown). Please verify your email before continuing.",
+                        message: "We've sent a verification link to \(emailShown). Please verify your email before continuing.",
                         preferredStyle: .alert
                     )
                     alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
@@ -90,8 +90,28 @@ final class SignupController: UIViewController, UITextFieldDelegate {
             }
         }
     }
+    
+    @IBAction private func googleLoginTapped(_ sender: UIButton) {
+        setButtonLoading(googleLogin, isLoading: true)
 
-    // MARK: UI helpers
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                try await authService.loginWithGoogle(presenting: self)
+                await MainActor.run {
+                    self.setButtonLoading(self.googleLogin, isLoading: false)
+                    self.offerToEnableFaceIDIfNeeded {
+                        self.performSegue(withIdentifier: "signupToHome", sender: self)
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.setButtonLoading(self.googleLogin, isLoading: false)
+                    self.showAuthAlert(title: "Google Sign-In failed", message: error.localizedDescription)
+                }
+            }
+        }
+    }
 
     private func showAuthAlert(title: String, message: String) {
         DispatchQueue.main.async {
@@ -107,5 +127,26 @@ final class SignupController: UIViewController, UITextFieldDelegate {
             button.alpha = isLoading ? 0.75 : 1.0
             button.transform = isLoading ? CGAffineTransform(scaleX: 0.98, y: 0.98) : .identity
         }
+    }
+    
+    private func offerToEnableFaceIDIfNeeded(completion: @escaping () -> Void) {
+        guard authService.shouldOfferBiometrics() else {
+            completion()
+            return
+        }
+
+        let alert = UIAlertController(
+            title: "Enable Face ID?",
+            message: "Use Face ID to unlock the app next time.",
+            preferredStyle: .alert
+        )
+
+        alert.addAction(UIAlertAction(title: "Not now", style: .cancel) { _ in completion() })
+        alert.addAction(UIAlertAction(title: "Enable", style: .default) { [weak self] _ in
+            self?.authService.enableBiometrics()
+            completion()
+        })
+
+        present(alert, animated: true)
     }
 }

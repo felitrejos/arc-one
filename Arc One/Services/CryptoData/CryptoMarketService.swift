@@ -59,7 +59,6 @@ final class CryptoMarketService {
         return data
     }
     
-    /// Fetch current prices and 24h change for multiple coins
     func fetchQuotes(coinIds: [String]) async throws -> [String: CryptoQuote] {
         guard !coinIds.isEmpty else { return [:] }
         
@@ -86,7 +85,6 @@ final class CryptoMarketService {
         return result
     }
     
-    /// Fetch coin profile (name, logo)
     func fetchProfile(coinId: String) async throws -> CryptoProfile? {
         // First check hardcoded list
         if let coin = Self.availableCoins.first(where: { $0.id == coinId }) {

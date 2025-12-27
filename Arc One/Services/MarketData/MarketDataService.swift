@@ -16,8 +16,6 @@ struct MarketInfo {
     let tickers: [String]
 }
 
-// MARK: - Available Markets & Tickers
-
 extension MarketDataService {
     static let availableMarkets: [MarketInfo] = [
         MarketInfo(id: "US", displayName: "US Stocks", tickers: [

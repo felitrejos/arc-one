@@ -15,7 +15,6 @@ final class AuthService {
     }
 
     // Email/Password Login
-
     func login(email: String, password: String) async throws {
         let result = try await auth.signIn(withEmail: email, password: password)
         let user = result.user
@@ -27,7 +26,6 @@ final class AuthService {
     }
 
     // Sign up
-
     func signup(email: String, password: String) async throws -> String {
         let result = try await auth.createUser(withEmail: email, password: password)
         let user = result.user
@@ -36,7 +34,6 @@ final class AuthService {
     }
 
     // Google Sign-In
-
     func loginWithGoogle(presenting vc: UIViewController) async throws {
         guard let clientID = FirebaseApp.app()?.options.clientID else {
             throw AuthError.missingClientID
@@ -66,7 +63,6 @@ final class AuthService {
     }
 
     // Biometrics prompt
-
     func shouldOfferBiometrics() -> Bool {
         if biometricsStore.biometricsEnabled { return false }
 

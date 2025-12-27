@@ -48,21 +48,25 @@ final class CryptoChartCoordinator: NSObject, ChartViewDelegate {
     }
     
     func setDayChart(dataPoints: [CryptoChartDataPoint], openEquity: Double, currentPercent: Double) {
-        guard let chartView, openEquity != 0, !dataPoints.isEmpty else { return }
+        guard let chartView, !dataPoints.isEmpty else { return }
+        guard let firstEquity = dataPoints.first?.equityUSD, firstEquity != 0 else { return }
         
         currentDataPoints = dataPoints
-        baselineEquity = openEquity
+        baselineEquity = firstEquity  // Use first point as baseline
         storedPercent = currentPercent
         
+        // Calculate percent from first point
         let entries = dataPoints.enumerated().map { index, point -> ChartDataEntry in
-            let percentFromOpen = ((point.equityUSD - openEquity) / openEquity) * 100.0
-            return ChartDataEntry(x: Double(index), y: percentFromOpen)
+            let percentFromFirst = ((point.equityUSD - firstEquity) / firstEquity) * 100.0
+            return ChartDataEntry(x: Double(index), y: percentFromFirst)
         }
         
         guard !entries.isEmpty else { return }
         
         setupXAxis(chartView, dates: dataPoints.map { $0.date }, rangeType: .day)
-        setupYAxis(chartView, currentPercent: currentPercent)
+        
+        let lastPercent = entries.last?.y ?? 0
+        setupYAxis(chartView, currentPercent: lastPercent)
         applyChartData(chartView, entries: entries, isPositive: currentPercent >= 0)
     }
     
@@ -154,7 +158,7 @@ final class CryptoChartCoordinator: NSObject, ChartViewDelegate {
         right.enabled = true
         right.drawGridLinesEnabled = false
         right.drawAxisLineEnabled = false
-        right.drawLabelsEnabled = true
+        right.drawLabelsEnabled = false
         right.labelTextColor = .secondaryLabel
         right.labelFont = .systemFont(ofSize: 11)
         right.valueFormatter = PercentAxisFormatter()

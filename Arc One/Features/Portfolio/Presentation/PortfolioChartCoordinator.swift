@@ -70,10 +70,11 @@ final class PortfolioChartCoordinator: NSObject, ChartViewDelegate {
     }
     
     func setDayChart(dataPoints: [ChartDataPoint], openEquity: Double, currentPercent: Double) {
-        guard let chartView, openEquity != 0, !dataPoints.isEmpty else { return }
+        guard let chartView, !dataPoints.isEmpty else { return }
+        guard let firstEquity = dataPoints.first?.equityUSD, firstEquity != 0 else { return }
         
         currentDataPoints = dataPoints
-        baselineEquity = openEquity
+        baselineEquity = firstEquity  // Use first point as baseline
         storedPercent = currentPercent
         
         let calendar = Calendar.current
@@ -86,13 +87,16 @@ final class PortfolioChartCoordinator: NSObject, ChartViewDelegate {
             
             guard xValue >= 0, xValue <= dayTotalMinutes else { continue }
             
-            let percentFromOpen = ((point.equityUSD - openEquity) / openEquity) * 100.0
-            entries.append(ChartDataEntry(x: xValue, y: percentFromOpen))
+            // Calculate percent from first point
+            let percentFromFirst = ((point.equityUSD - firstEquity) / firstEquity) * 100.0
+            entries.append(ChartDataEntry(x: xValue, y: percentFromFirst))
         }
         
         guard !entries.isEmpty else { return }
         
-        setupDayAxes(chartView, currentPercent: currentPercent)
+        // Calculate the actual percent range for Y-axis
+        let lastPercent = entries.last?.y ?? 0
+        setupDayAxes(chartView, currentPercent: lastPercent)
         applyChartData(chartView, entries: entries, isPositive: currentPercent >= 0)
     }
     
@@ -189,7 +193,7 @@ final class PortfolioChartCoordinator: NSObject, ChartViewDelegate {
         right.enabled = true
         right.drawGridLinesEnabled = false
         right.drawAxisLineEnabled = false
-        right.drawLabelsEnabled = true
+        right.drawLabelsEnabled = false  
         right.labelTextColor = .secondaryLabel
         right.labelFont = .systemFont(ofSize: 11)
         right.valueFormatter = PercentAxisFormatter()

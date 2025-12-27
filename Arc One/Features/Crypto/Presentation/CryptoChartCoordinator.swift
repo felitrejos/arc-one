@@ -168,7 +168,7 @@ final class CryptoChartCoordinator: NSObject, ChartViewDelegate {
     private func applyChartData(_ chartView: LineChartView, entries: [ChartDataEntry], isPositive: Bool) {
         let set = LineChartDataSet(entries: entries, label: "")
         set.mode = .linear
-        set.lineWidth = 2.5
+        set.lineWidth = 4.0
         set.drawCirclesEnabled = false
         set.drawValuesEnabled = false
         set.drawFilledEnabled = false

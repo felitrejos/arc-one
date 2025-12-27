@@ -1,7 +1,7 @@
-import Foundation
+import UIKit
 
 struct CryptoMarketResult {
-    let holdingVMs: [CryptoHoldingViewModel]
+    var holdingVMs: [CryptoHoldingViewModel]
     let quotes: [String: CryptoQuote]
     let totalEquityUSD: Double
     let totalDailyPercent: Double
@@ -32,7 +32,6 @@ final class CryptoMarketCoordinator {
             let currentPrice = quote?.currentPrice ?? dto.avgBuyPrice
             let previousClose = quote?.previousClose ?? dto.avgBuyPrice
             
-            // Calculate daily percent from current price and previous close
             let dailyPercent = previousClose == 0 ? 0 : ((currentPrice - previousClose) / previousClose) * 100
             
             let currentValue = currentPrice * dto.quantity
@@ -42,7 +41,6 @@ final class CryptoMarketCoordinator {
             totalEquity += currentValue
             weightedDailySum += currentValue * dailyPercent
             
-            // Get coin name from hardcoded list
             let coinName = CryptoMarketService.availableCoins.first { $0.id == dto.coinId }?.name ?? dto.symbol
             
             let vm = CryptoHoldingViewModel(
@@ -55,6 +53,15 @@ final class CryptoMarketCoordinator {
                 icon: nil
             )
             holdingVMs.append(vm)
+        }
+        
+        // Load logo images asynchronously
+        for i in holdingVMs.indices {
+            let coinId = holdingVMs[i].coinId
+            if let profile = try? await market.fetchProfile(coinId: coinId),
+               let url = profile.logoURL {
+                holdingVMs[i].icon = await ImageLoader.shared.load(url)
+            }
         }
         
         let totalDailyPercent = totalEquity == 0 ? 0 : weightedDailySum / totalEquity

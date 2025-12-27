@@ -155,7 +155,7 @@ final class CryptoController: UIViewController {
     }
 
     private func setupTable() {
-        tableView.register(UINib(nibName: "CryptoCell", bundle: nil), forCellReuseIdentifier: "cryptoCell")
+        tableView.register(UINib(nibName: "CryptoCell", bundle: nil), forCellReuseIdentifier: "cryptoCustomCell")
         tableView.dataSource = tableDS
         tableView.delegate = tableDS
 

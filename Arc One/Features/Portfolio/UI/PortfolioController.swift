@@ -313,6 +313,13 @@ final class PortfolioController: UIViewController {
     private func isMarketOpen() -> Bool {
         let calendar = Calendar.current
         let now = Date()
+        
+        // Check if it's a weekend (Saturday = 7, Sunday = 1)
+        let weekday = calendar.component(.weekday, from: now)
+        if weekday == 1 || weekday == 7 {
+            return false
+        }
+        
         let components = calendar.dateComponents([.hour, .minute], from: now)
         let currentMinutes = (components.hour ?? 0) * 60 + (components.minute ?? 0)
         

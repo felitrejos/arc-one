@@ -172,7 +172,7 @@ final class CryptoChartCoordinator: NSObject, ChartViewDelegate {
         set.drawCirclesEnabled = false
         set.drawValuesEnabled = false
         set.drawFilledEnabled = false
-        set.setColor(isPositive ? .systemGreen : .systemRed)
+        set.setColor(.systemPurple) 
         set.highlightEnabled = true
         set.highlightColor = .tertiaryLabel
         set.highlightLineWidth = 1

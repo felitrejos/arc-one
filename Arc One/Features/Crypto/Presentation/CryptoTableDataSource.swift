@@ -17,7 +17,7 @@ final class CryptoTableDataSource: NSObject, UITableViewDataSource, UITableViewD
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         if indexPath.section == 0 {
-            let cell = tableView.dequeueReusableCell(withIdentifier: "cryptoCell", for: indexPath) as! InvestmentCell
+            let cell = tableView.dequeueReusableCell(withIdentifier: "cryptoCustomCell", for: indexPath) as! CryptoCell
             let vm = holdings[indexPath.row]
             
             cell.name.text = vm.symbol

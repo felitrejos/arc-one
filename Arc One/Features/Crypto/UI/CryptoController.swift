@@ -155,7 +155,7 @@ final class CryptoController: UIViewController {
     }
 
     private func setupTable() {
-        tableView.register(UINib(nibName: "InvestmentCell", bundle: nil), forCellReuseIdentifier: "cryptoCell")
+        tableView.register(UINib(nibName: "CryptoCell", bundle: nil), forCellReuseIdentifier: "cryptoCell")
         tableView.dataSource = tableDS
         tableView.delegate = tableDS
 
@@ -345,7 +345,8 @@ final class CryptoController: UIViewController {
         
         let quote = marketQuotes[dto.coinId]
         let currentPrice = quote?.currentPrice ?? dto.avgBuyPrice
-        let dailyPct = quote?.priceChange24h ?? 0
+        let previousClose = quote?.previousClose ?? dto.avgBuyPrice
+        let dailyPct = previousClose == 0 ? 0 : ((currentPrice - previousClose) / previousClose) * 100
         let sinceBuyPct = vm.sinceBuyChangePercent
         
         let totalInvested = dto.avgBuyPrice * dto.quantity

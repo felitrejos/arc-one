@@ -1,68 +1,61 @@
 # Arc One
 
-A personal finance management app for iOS that helps you track investments, stocks, and cryptocurrency portfolios with real-time market data and comprehensive analytics.
+A personal finance app for iOS to track stocks and cryptocurrency portfolios with real-time market data.
 
 ## Features
 
-### Portfolio Management
-- Track multiple investment holdings (stocks and crypto)
-- Add and manage investments with purchase details
-- View detailed investment performance metrics
-- Real-time portfolio valuation and history tracking
-- Interactive charts showing portfolio performance over time
-
-### Authentication & Security
-- Firebase Authentication with multiple sign-in methods:
-  - Email/Password
-  - Google OAuth
-- Face ID biometric authentication for enhanced security
-- Secure user profile management
-
-### Profile & Settings
-- Customizable user profiles
-- Account information management
+- **Portfolio**: Track stock holdings with real-time quotes and interactive charts (1D/1W/1M/1Y)
+- **Crypto**: Track 15+ cryptocurrencies with CoinGecko integration
+- **Analytics**: Combined net worth, asset allocation, and top holdings breakdown
+- **Authentication**: Email/password, Google Sign-In, and Face ID
+- **Profile**: User settings and account management
 
 ## Architecture
 
-The app follows a feature-based architecture with clean separation of concerns:
+Feature-based modular architecture with MVVM pattern:
 
 ```
-Arc One/
-├── Features/
-│   ├── Authentication/     # Login, signup, and biometrics
-│   ├── Portfolio/          # Investment tracking and management
-│   ├── Profile/            # User profile and settings
-│   └── Crypto/             # Cryptocurrency features
-├── Utilities/              # Shared formatters and extensions
-└── GoogleService-Info.plist
+Features/
+├── Authentication/   # Login, signup, biometrics
+├── Portfolio/        # Stock tracking, charts, market data
+├── Crypto/           # Cryptocurrency tracking
+├── Analytics/        # Combined portfolio analytics
+└── Profile/          # User profile and settings
 ```
 
-Each feature module contains:
-- **UI**: View controllers and custom cells
-- **Models**: Data models and view models
-- **Services**: Business logic and API integration
-- **Presentation**: Data sources and coordinators
+Each feature contains:
+- `UI/` - View controllers and cells
+- `Models/` - DTOs and ViewModels
+- `Services/` - API and Firebase integration
+- `Presentation/` - Data sources and coordinators
 
-## Technologies
+## Firestore Collections
 
-- **Firebase**: Authentication, Firestore database
-- **UIKit**: Native iOS UI framework
-- **Google Sign-In**: Third-party authentication
+```
+users/{uid}/
+├── holdings/              # Stock investments
+├── crypto_holdings/       # Crypto investments
+├── snapshots/             # Daily stock portfolio values
+├── crypto_snapshots/      # Daily crypto portfolio values
+├── intraday_points/       # Stock intraday tracking
+└── crypto_intraday_points/# Crypto intraday tracking
+```
 
-## Requirements
+## Tech Stack
 
-- iOS 13.0+
-- Xcode 12.0+
-- Firebase project with:
-  - Authentication enabled (Google providers)
-  - Firestore database
+| Category | Technology |
+|----------|------------|
+| UI | UIKit, Storyboards, DGCharts |
+| Backend | Firebase Auth, Firestore, Storage |
+| Stock Data | Finnhub API |
+| Crypto Data | CoinGecko API |
+| Auth | Google Sign-In, Face ID |
 
-## Getting Started
+## Screenshots
 
-1. Clone the repository
-2. Ensure `GoogleService-Info.plist` is properly configured for your Firebase project
-3. Open `Arc One.xcodeproj` in Xcode
-4. Build and run (⌘ + R)
+| Portfolio | Crypto | Analytics | Profile |
+|:---------:|:------:|:---------:|:-------:|
+| ![Portfolio](screenshots/portfolio.png) | ![Crypto](screenshots/crypto.png) | ![Analytics](screenshots/analytics.png) | ![Profile](screenshots/profile.png) |
 
 ## Authors
 

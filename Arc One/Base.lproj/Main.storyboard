@@ -420,9 +420,9 @@
                                 <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                 <constraints>
                                     <constraint firstAttribute="trailing" secondItem="VOI-qg-ywY" secondAttribute="trailing" constant="16" id="CBf-1b-KRO"/>
-                                    <constraint firstAttribute="trailing" secondItem="Pej-zF-BWf" secondAttribute="trailing" id="LkY-Yt-6AC"/>
+                                    <constraint firstAttribute="trailing" secondItem="Pej-zF-BWf" secondAttribute="trailing" constant="2" id="LkY-Yt-6AC"/>
                                     <constraint firstItem="Wc4-up-OnI" firstAttribute="leading" secondItem="lQw-kw-z2e" secondAttribute="leading" constant="8" id="ShT-Tc-vIA"/>
-                                    <constraint firstItem="Pej-zF-BWf" firstAttribute="leading" secondItem="lQw-kw-z2e" secondAttribute="leading" id="fQF-dh-WHZ"/>
+                                    <constraint firstItem="Pej-zF-BWf" firstAttribute="leading" secondItem="lQw-kw-z2e" secondAttribute="leading" constant="2" id="fQF-dh-WHZ"/>
                                     <constraint firstItem="VOI-qg-ywY" firstAttribute="leading" secondItem="lQw-kw-z2e" secondAttribute="leading" constant="16" id="iRC-hS-wSR"/>
                                     <constraint firstAttribute="trailing" secondItem="Wc4-up-OnI" secondAttribute="trailing" constant="8" id="pgA-1D-yDL"/>
                                 </constraints>
@@ -1667,10 +1667,10 @@
                                     <constraint firstItem="4ko-9F-Zjm" firstAttribute="leading" secondItem="Pua-AJ-P7l" secondAttribute="leading" constant="8" id="Nzl-9T-lQt"/>
                                     <constraint firstItem="LRD-Fb-Z5i" firstAttribute="leading" secondItem="Pua-AJ-P7l" secondAttribute="leading" constant="8" id="gor-5G-xxI"/>
                                     <constraint firstItem="PnU-b4-h34" firstAttribute="leading" secondItem="Pua-AJ-P7l" secondAttribute="leading" constant="8" id="h3c-TO-4Dt"/>
-                                    <constraint firstAttribute="trailing" secondItem="Qxq-Ac-33W" secondAttribute="trailing" id="jrP-FP-w9G"/>
+                                    <constraint firstAttribute="trailing" secondItem="Qxq-Ac-33W" secondAttribute="trailing" constant="2" id="jrP-FP-w9G"/>
                                     <constraint firstAttribute="trailing" secondItem="Rtw-XC-ymJ" secondAttribute="trailing" constant="16" id="oTp-gT-x3c"/>
                                     <constraint firstAttribute="trailing" secondItem="LRD-Fb-Z5i" secondAttribute="trailing" constant="8" id="tal-cJ-SKC"/>
-                                    <constraint firstItem="Qxq-Ac-33W" firstAttribute="leading" secondItem="Pua-AJ-P7l" secondAttribute="leading" id="vGd-v7-6iV"/>
+                                    <constraint firstItem="Qxq-Ac-33W" firstAttribute="leading" secondItem="Pua-AJ-P7l" secondAttribute="leading" constant="2" id="vGd-v7-6iV"/>
                                 </constraints>
                             </stackView>
                         </subviews>

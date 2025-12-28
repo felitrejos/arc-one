@@ -36,6 +36,7 @@ final class PortfolioController: UIViewController {
     private var lastMarketEquityUSD: Double = 0
     private var intradayPoints: [ChartDataPoint] = []
     private var previousHoldingsCount: Int = -1  // -1 = not yet initialized
+    private var hasAppearedOnce = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -51,6 +52,9 @@ final class PortfolioController: UIViewController {
 
         startHoldingsListener()
         chartCoordinator.setDayPlaceholder(percent: 0)
+        
+        // Hide content initially
+        view.alpha = 0
         
         // On launch: check if we need to create a snapshot from yesterday's data
         Task { await processYesterdayData() }
@@ -95,7 +99,7 @@ final class PortfolioController: UIViewController {
     }
     
     private func styleHeader() {
-        amountLabel.font = .systemFont(ofSize: amountLabel.font.pointSize, weight: .bold)
+        amountLabel.font = .systemFont(ofSize: amountLabel.font.pointSize, weight: .heavy)
         changeLabel.font = .systemFont(ofSize: changeLabel.font.pointSize, weight: .bold)
     }
 
@@ -207,7 +211,16 @@ final class PortfolioController: UIViewController {
                     await self.loadIntradayPoints()
                 }
                 await self.refreshHeaderAndChartForSelectedRange()
+                self.fadeInIfNeeded()
             }
+        }
+    }
+    
+    private func fadeInIfNeeded() {
+        guard !hasAppearedOnce else { return }
+        hasAppearedOnce = true
+        UIView.animate(withDuration: 0.3) {
+            self.view.alpha = 1
         }
     }
     

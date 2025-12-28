@@ -14,10 +14,14 @@ final class ProfileController: UIViewController {
     private let ds = ProfileTableDataSource()
     private let profileService = ProfileService()
     private let settingsService = SettingsService()
+    private var hasAppearedOnce = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Profile"
+        
+        // Hide content initially
+        view.alpha = 0
 
         tableView.dataSource = ds
         tableView.delegate = ds
@@ -47,11 +51,20 @@ final class ProfileController: UIViewController {
             self.ds.profileEmail = state.email
             self.ds.profileAvatar = state.avatar
             self.reloadProfileSummaryRow()
+            self.fadeInIfNeeded()
         }
     }
 
     deinit {
         profileService.stopListening()
+    }
+    
+    private func fadeInIfNeeded() {
+        guard !hasAppearedOnce else { return }
+        hasAppearedOnce = true
+        UIView.animate(withDuration: 0.3) {
+            self.view.alpha = 1
+        }
     }
 
     private func reloadProfileSummaryRow() {

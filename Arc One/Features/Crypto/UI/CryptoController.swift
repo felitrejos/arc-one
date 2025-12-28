@@ -36,6 +36,7 @@ final class CryptoController: UIViewController {
     private var lastMarketEquityUSD: Double = 0
     private var intradayPoints: [CryptoChartDataPoint] = []
     private var previousHoldingsCount: Int = -1
+    private var hasAppearedOnce = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -51,6 +52,9 @@ final class CryptoController: UIViewController {
 
         startHoldingsListener()
         chartCoordinator.setDayPlaceholder(percent: 0)
+        
+        // Hide content initially
+        view.alpha = 0
         
         Task { await processYesterdayData() }
     }
@@ -91,7 +95,7 @@ final class CryptoController: UIViewController {
     }
     
     private func styleHeader() {
-        amountLabel.font = .systemFont(ofSize: amountLabel.font.pointSize, weight: .bold)
+        amountLabel.font = .systemFont(ofSize: amountLabel.font.pointSize, weight: .heavy)
         changeLabel.font = .systemFont(ofSize: changeLabel.font.pointSize, weight: .bold)
     }
 
@@ -200,7 +204,16 @@ final class CryptoController: UIViewController {
                     await self.loadIntradayPoints()
                 }
                 await self.refreshHeaderAndChartForSelectedRange()
+                self.fadeInIfNeeded()
             }
+        }
+    }
+    
+    private func fadeInIfNeeded() {
+        guard !hasAppearedOnce else { return }
+        hasAppearedOnce = true
+        UIView.animate(withDuration: 0.3) {
+            self.view.alpha = 1
         }
     }
     

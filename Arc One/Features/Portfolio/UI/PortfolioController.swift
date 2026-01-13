@@ -298,18 +298,17 @@ final class PortfolioController: UIViewController {
             let snaps = try await snapshotService.fetchSnapshots(lastNDays: days)
             
             guard snaps.count > 1 else {
-                let equity = snaps.first?.equityUSD ?? lastMarketEquityUSD
-                updateHeader(amount: equity, percent: 0)
+                updateHeader(amount: lastMarketEquityUSD, percent: 0)
                 chartCoordinator.setEmptyChart(message: "No data yet")
                 return
             }
             
             let dataPoints = snaps.map { ChartDataPoint(date: $0.date, equityUSD: $0.equityUSD) }
             let firstEquity = dataPoints.first?.equityUSD ?? 0
-            let lastEquity = dataPoints.last?.equityUSD ?? lastMarketEquityUSD
-            let pct = firstEquity == 0 ? 0 : ((lastEquity - firstEquity) / firstEquity) * 100.0
+            // Use current live equity for accurate display
+            let pct = firstEquity == 0 ? 0 : ((lastMarketEquityUSD - firstEquity) / firstEquity) * 100.0
 
-            updateHeader(amount: lastEquity, percent: pct)
+            updateHeader(amount: lastMarketEquityUSD, percent: pct)
             chartCoordinator.setChartData(dataPoints, rangeType: rangeType)
         } catch {
             print("[Portfolio] Failed to fetch snapshots: \(error)")
